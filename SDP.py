@@ -26,5 +26,6 @@ class DNNSDP(object):
 """For now, no checking of dimensions"""
     def toConic(self):
 #For now, no inequality constraints
-
+        for Mat in self._Aeq:
+            
         ConicP = ConicProgramming(self._Copt.reshape(self._n),self._Aeq.reshape)
