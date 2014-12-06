@@ -25,7 +25,7 @@ class ConicProgramming(object):
         self._beq = beq
         self._Ain = Ain
         self._bin = bin
-
+        """How should I receive K and Kp here? Maybe receive functions delta K and delta Kp and create the functions delta K* and delta Kp*?"""
 
 
 class DNNSDP(object):
@@ -58,4 +58,4 @@ class DNNSDP(object):
         bin = np.matrix(self._bin).transpose()
 
         ConicP = ConicProgramming(self._Copt.reshape(self._n**2),Aeq,beq,Ain,bin)
-
+        """How do you want me to add Kp, K? As functions? Maybe add directly delta K* and delta K*?"""
