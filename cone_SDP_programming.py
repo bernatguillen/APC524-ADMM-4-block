@@ -8,14 +8,14 @@ class ErrorDim(Exception):
         errstr = "Dimension should be "+repr(self._dim1)+" but is "+repr(self._dim2)
         return errstr
 
-
-class ConicProgramming(object):
-"""Defines a conic problem with:
+""" Defines a conic problem with:
      minimize Copt*x
      s.t. Aeq*x == beq
           Ain*x <= bin
           x is in K
-          x is in Kp"""
+          x is in Kp """
+class ConicProgramming(object):
+
     def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None):
         self._n = Copt.shape[1]
         self._neq = Aeq.shape[0]
@@ -27,14 +27,14 @@ class ConicProgramming(object):
         self._bin = bin
         """How should I receive K and Kp here? Maybe receive functions delta K and delta Kp and create the functions delta K* and delta Kp*?"""
 
-
-class DNNSDP(object):
 """Defines an SDP problem with:
      minimize Tr(Copt*X)
      s.t. tr(Aeq[k]*X) == beq[k] k = 0,...,M-1
           tr(Ain[k]*X) <= bin[k] k = 0,...,M'-1
           X is SDP
           Elements of X nonnegative"""
+class DNNSDP(object):
+
     def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None):
         self._n = Copt.shape[0]
         self._Copt = Copt
@@ -44,7 +44,7 @@ class DNNSDP(object):
         self._bin = bin
         
 #number of columns of Aeq has to be n
-"""For now, no error checking on dimensions or number of constraints"""
+
     def toConic(self):
         Aeq = self._Aeq[1].reshape(self._n**2)
         for Mat in self._Aeq[2:]:
