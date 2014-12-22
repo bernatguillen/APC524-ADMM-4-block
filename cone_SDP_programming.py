@@ -16,7 +16,7 @@ class ErrorDim(Exception):
           x is in Kp """
 class ConicProgramming(object):
 
-    def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None):
+    def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None, K=None, Kp=None):
         self._n = Copt.shape[1]
         self._neq = Aeq.shape[0]
         self._nin = Ain.shape[0]
@@ -25,7 +25,10 @@ class ConicProgramming(object):
         self._beq = beq
         self._Ain = Ain
         self._bin = bin
-        """How should I receive K and Kp here? Maybe receive functions delta K and delta Kp and create the functions delta K* and delta Kp*?"""
+        #K, Kp refer to PI K* and PI Kp* (projections to the duals)
+        self._Kp = Kp
+        self._K = K
+
 
 """Defines an SDP problem with:
      minimize Tr(Copt*X)
@@ -46,7 +49,7 @@ class DNNSDP(object):
 #number of columns of Aeq has to be n
 
     def toConic(self):
-        Aeq = self._Aeq[1].reshape(self._n**2)
+        Aeq = self._Aeq[1].reshape(-1)
         for Mat in self._Aeq[2:]:
             Aeq = np.vstack((Aeq, Mat.reshape(self._n**2)))
         
@@ -57,5 +60,15 @@ class DNNSDP(object):
 
         bin = np.matrix(self._bin).transpose()
 
-        ConicP = ConicProgramming(self._Copt.reshape(self._n**2),Aeq,beq,Ain,bin)
+        def Kp(X):
+            X[X<0.] = 0
+
+        def K(X,n):
+            matX = X.T.reshape(n,n)
+            B = np.linalg.eig(matX)
+            B[0][B[0]<0.] = 0.
+            C = np.dot(B[1], (B[0]*B[1]).T)
+            return C.reshape(-1).T
+
+        ConicP = ConicProgramming(self._Copt.reshape(self._n**2),Aeq,beq,Ain,bin, K, Kp)
         """How do you want me to add Kp, K? As functions? Maybe add directly delta K* and delta K*?"""
