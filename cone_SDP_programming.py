@@ -53,12 +53,12 @@ class DNNSDP(object):
         for Mat in self._Aeq[2:]:
             Aeq = np.vstack((Aeq, Mat.reshape(self._n**2)))
         
-        beq = np.matrix(self._beq).transpose()
+        beq = np.array(self._beq).transpose()
         Ain = self._Ain[1].reshape(self._n**2)
         for Mat in self._Ain[2:]:
             Ain = np.vstack((Ain, Mat.reshape(self._n**2)))
 
-        bin = np.matrix(self._bin).transpose()
+        bin = np.array(self._bin).transpose()
 
         def Kp(X):
             X[X<0.] = 0
