@@ -14,7 +14,7 @@ class ErrorDim(Exception):
           Ain*x <= bin
           x is in K
           x is in Kp """
-class ConicProgramming(object):
+class ConicProgrammingProblem(object):
 
     def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None, K=None, Kp=None):
         self._n = Copt.shape[1]
@@ -28,6 +28,9 @@ class ConicProgramming(object):
         #K, Kp refer to PI K* and PI Kp* (projections to the duals)
         self._Kp = Kp
         self._K = K
+
+    def __ADMM_noIn(self, X0, s0, z0, AeqInv, sigma, tau):
+        #tau should be less than (1+sqrt(5))/2 for convergence 
 
 
 """Defines an SDP problem with:
@@ -65,7 +68,7 @@ class DNNSDP(object):
 
         def K(X,n):
             matX = X.T.reshape(n,n)
-            B = np.linalg.eig(matX)
+            B = np.linalg.eigh(matX)
             B[0][B[0]<0.] = 0.
             C = np.dot(B[1], (B[0]*B[1]).T)
             return C.reshape(-1).T
