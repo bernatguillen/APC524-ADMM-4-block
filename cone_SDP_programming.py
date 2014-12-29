@@ -19,7 +19,10 @@ class ConicProgrammingProblem(object):
     def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None, K=None, Kp=None):
         self._n = Copt.shape[1]
         self._neq = Aeq.shape[0]
-        self._nin = Ain.shape[0]
+        if Ain is not None:
+            self._nin = Ain.shape[0]
+        else:
+            self._nin = 0
         self._Copt = Copt
         self._Aeq = Aeq
         self._beq = beq
@@ -29,10 +32,58 @@ class ConicProgrammingProblem(object):
         self._Kp = Kp
         self._K = K
 
-    def __ADMM_noIn(self, X0, s0, z0, AeqInv, sigma, tau):
+    def __ADMM_noIn_step(self, X,s,z,y,AeqInv,sigma, tau):
+        s = self._K(self._Copt - z - np.dot(self._Aeq.T,y) - x/sigma)
+        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) #does z change in K? Careful
+        z = self._Kp(self._Copt - s - np.dot(self._Aeq.T,y) - x/sigma)
+        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) #does s change in Kp? Careful
+        X += tau*sigma*(s + z + np.dot(self._Aeq.T,y) - self._Copt)
+        return [X, s, z, y]
+
+    def __ADMM_noIn(self, X0, s0, z0, AeqInv, sigma, tau,tol,nsteps):
+
+        def CheckConditions(x,s,z,y):
+            res1=abs(sum(sum((np.dot(self._Aeq,x)-self._beq)**2)))
+            res2=abs(sum(sum((s+z+np.dot(self._Aeq.T,y)-self._Copt)**2)))
+            res3=abs(sum(sum(x*s)))
+            res4=abs(sum(sum(x*z)))
+            return max(res1,res2,res3,res4)
+
         #tau should be less than (1+sqrt(5))/2 for convergence 
+        y = np.dot(AeqInv, np.dot(self._Aeq,self._Copt - s0 - z0))
+        res = CheckConditions(X0,s0,z0,y)
+        k = 0
+        while res > tol and k < nsteps:
+            [X0, s0, z0, y] = self.__ADMM_noIn_step(X0,s0,z0,y,AeqInv,sigma,tau)
+            res = CheckConditions(X0,s0,z0,y)
+            k += 1
+        if res <= tol:
+            status = 0
+        else:
+            status = 1
+        return [X0, s0, z0, y, status]
 
+    def InitConditions(self,x0,s0,z0): #Is this necessary?
+        if x0 is None:
+            x0 = np.dot(np.linalg.pinv(self._Aeq),self._beq)
+        if s0 is None:
+            s0 = x0
+        if z0 is None:
+            z0 = x0
+        s0 = self._K(s0)
+        z0 = self._Kp(z0)
+        return [x0,s0,z0]
 
+    def Solve(sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
+        [X0,s0,z0] = InitConditions(X0,s0,z0)
+        if AeqInv is None:
+            AeqInv = np.linalg.inv(np.dot(self._Aeq,self._Aeq.T))
+        if self._nin == 0:
+            [x,s,z,y,status] = self.__ADMM_noIn(X0,s0,z0,AeqInv,sigma,tau,tol,nsteps)
+            return [x,s,z,y,status,"no inequalities"]
+        else:
+            return "Not yet done"
+            
 """Defines an SDP problem with:
      minimize Tr(Copt*X)
      s.t. tr(Aeq[k]*X) == beq[k] k = 0,...,M-1
