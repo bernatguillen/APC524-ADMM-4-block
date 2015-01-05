@@ -33,9 +33,9 @@ class ConicProgrammingProblem(object):
         self._K = K
 
     def __ADMM_noIn_step(self, X,s,z,y,AeqInv,sigma, tau):
-        s = self._K(self._Copt - z - np.dot(self._Aeq.T,y) - x/sigma)
+        s = self._K(self._Copt - z - np.dot(self._Aeq.T,y) - X/sigma,np.sqrt(self._n))
         y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) #does z change in K? Careful
-        z = self._Kp(self._Copt - s - np.dot(self._Aeq.T,y) - x/sigma)
+        z = self._Kp(self._Copt - s - np.dot(self._Aeq.T,y) - X/sigma)
         y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) #does s change in Kp? Careful
         X += tau*sigma*(s + z + np.dot(self._Aeq.T,y) - self._Copt)
         return [X, s, z, y]
@@ -43,10 +43,10 @@ class ConicProgrammingProblem(object):
     def __ADMM_noIn(self, X0, s0, z0, AeqInv, sigma, tau,tol,nsteps):
 
         def CheckConditions(x,s,z,y):
-            res1=abs(sum(sum((np.dot(self._Aeq,x)-self._beq)**2)))
-            res2=abs(sum(sum((s+z+np.dot(self._Aeq.T,y)-self._Copt)**2)))
-            res3=abs(sum(sum(x*s)))
-            res4=abs(sum(sum(x*z)))
+            res1=abs(np.sqrt(sum((np.dot(self._Aeq,x)-self._beq)**2)))
+            res2=abs(sum((s+z+np.dot(self._Aeq.T,y)-self._Copt)**2))
+            res3=abs(sum(x*s))
+            res4=abs(sum(x*z))
             return max(res1,res2,res3,res4)
 
         #tau should be less than (1+sqrt(5))/2 for convergence 
@@ -63,19 +63,19 @@ class ConicProgrammingProblem(object):
             status = 1
         return [X0, s0, z0, y, status]
 
-    def InitConditions(self,x0,s0,z0): #Is this necessary?
+    def InitConditions(self,x0=None,s0=None,z0=None): #Is this necessary?
         if x0 is None:
             x0 = np.dot(np.linalg.pinv(self._Aeq),self._beq)
         if s0 is None:
             s0 = x0
         if z0 is None:
             z0 = x0
-        s0 = self._K(s0)
+        s0 = self._K(s0,np.sqrt(self._n))
         z0 = self._Kp(z0)
         return [x0,s0,z0]
 
-    def Solve(sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
-        [X0,s0,z0] = InitConditions(X0,s0,z0)
+    def Solve(self,sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
+        [X0,s0,z0] = self.InitConditions(X0,s0,z0)
         if AeqInv is None:
             AeqInv = np.linalg.inv(np.dot(self._Aeq,self._Aeq.T))
         if self._nin == 0:
@@ -123,6 +123,7 @@ class DNNSDP(object):
             bin = None
         def Kp(X):
             X[X<0.] = 0
+            return X
 
         def K(X,n):
             matX = X.T.reshape(n,n)
