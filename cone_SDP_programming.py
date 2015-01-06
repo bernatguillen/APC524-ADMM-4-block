@@ -28,26 +28,35 @@ class ConicProgrammingProblem(object):
         self._beq = beq
         self._Ain = Ain
         self._bin = bin
-        #K, Kp refer to PI K* and PI Kp* (projections to the duals)
+        #K, Kp refer to PI K and PI Kp (projections), we use moreau's decomposition theorem
         self._Kp = Kp
         self._K = K
-
+        
+    def _Kpdual(self,z):
+        return z + self._Kp(-z)
+    def _Kdual(self,s,n):
+        return s + self._K(-s,n)
+        
     def __ADMM_noIn_step(self, X,s,z,y,AeqInv,sigma, tau):
-        s = self._K(self._Copt - z - np.dot(self._Aeq.T,y) - X/sigma,np.sqrt(self._n))
-        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) #does z change in K? Careful
-        z = self._Kp(self._Copt - s - np.dot(self._Aeq.T,y) - X/sigma)
-        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) #does s change in Kp? Careful
+        s = self._Kdual(self._Copt - z - np.dot(self._Aeq.T,y) - X/sigma,np.sqrt(self._n))
+        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) 
+        z = self._Kpdual(self._Copt - s - np.dot(self._Aeq.T,y) - X/sigma)
+        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) 
         X += tau*sigma*(s + z + np.dot(self._Aeq.T,y) - self._Copt)
         return [X, s, z, y]
 
     def __ADMM_noIn(self, X0, s0, z0, AeqInv, sigma, tau,tol,nsteps):
 
         def CheckConditions(x,s,z,y):
-            res1=abs(np.sqrt(sum((np.dot(self._Aeq,x)-self._beq)**2)))
-            res2=abs(sum((s+z+np.dot(self._Aeq.T,y)-self._Copt)**2))
-            res3=abs(sum(x*s))
-            res4=abs(sum(x*z))
-            return max(res1,res2,res3,res4)
+            resP=np.sqrt(sum((np.dot(self._Aeq,x)-self._beq)**2))/(1+np.sqrt(sum(self._beq**2)))
+            resD=np.sqrt(sum((s+z+np.dot(self._Aeq.T,y)-self._Copt)**2))/(1+np.sqrt(sum(self._Copt**2)))
+            resK=np.sqrt(sum(x-self._K(x,np.sqrt(self._n))**2))/(1+np.sqrt(sum(x**2)))
+            resKp=np.sqrt(sum((x-self._Kp(x))**2))/(1+np.sqrt(sum(x**2)))
+            resKst=np.sqrt(sum(s-self._Kdual(s,np.sqrt(self._n))**2))/(1+np.sqrt(sum(s**2)))
+            resKpst=np.sqrt(sum((z-self._Kpdual(z))**2))/(1+np.sqrt(sum(z**2)))
+            resC1 = abs(np.dot(x,s))/(1+np.sqrt(sum(x**2))+np.sqrt(sum(s**2)))
+            resC2 = abs(np.dot(x,z))/(1+np.sqrt(sum(x**2))+np.sqrt(sum(z**2)))
+            return max(resP,resD,resK,resKp,resKst,resKpst,resC1,resC2)
 
         #tau should be less than (1+sqrt(5))/2 for convergence 
         y = np.dot(AeqInv, np.dot(self._Aeq,self._Copt - s0 - z0))
@@ -57,11 +66,7 @@ class ConicProgrammingProblem(object):
             [X0, s0, z0, y] = self.__ADMM_noIn_step(X0,s0,z0,y,AeqInv,sigma,tau)
             res = CheckConditions(X0,s0,z0,y)
             k += 1
-        if res <= tol:
-            status = 0
-        else:
-            status = 1
-        return [X0, s0, z0, y, status]
+        return [X0, s0, z0, y, res]
 
     def InitConditions(self,x0=None,s0=None,z0=None): #Is this necessary?
         if x0 is None:
@@ -79,8 +84,8 @@ class ConicProgrammingProblem(object):
         if AeqInv is None:
             AeqInv = np.linalg.inv(np.dot(self._Aeq,self._Aeq.T))
         if self._nin == 0:
-            [x,s,z,y,status] = self.__ADMM_noIn(X0,s0,z0,AeqInv,sigma,tau,tol,nsteps)
-            return [x,s,z,y,status,"no inequalities"]
+            [x,s,z,y,res] = self.__ADMM_noIn(X0,s0,z0,AeqInv,sigma,tau,tol,nsteps)
+            return [x,s,z,y,res,"no inequalities"]
         else:
             return "Not yet done"
             
@@ -138,12 +143,23 @@ class DNNSDP(object):
             return X
 
         def K(X,n):
-            matX = X.T.reshape(n,n)
+            matX = X.reshape(n,n)
             B = np.linalg.eigh(matX)
             B[0][B[0]<0.] = 0.
+            B[0][abs(B[0]<1e-9)] = 0.
             C = np.dot(B[1], (B[0]*B[1]).T)
             return C.reshape(-1).T
 
         ConicP = ConicProgrammingProblem(self._Copt.reshape(-1),Aeq,beq,Ain,bin, K, Kp)
         return ConicP
-        """How do you want me to add Kp, K? As functions? Maybe add directly delta K* and delta K*?"""
+        
+    def Solve(self, sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
+        if X0 is not None:
+            X0 = X0.reshape(-1)
+        if s0 is not None:
+            s0 = s0.reshape(-1)
+        if z0 is not None:
+            z0 = z0.reshape(-1)
+        myCon = self.toConic()
+        [X,s,z,y,res,mark] = myCon.Solve(sigma,tau,tol,nsteps,X0,s0,z0,AeqInv)
+        return [X.reshape(self._n,self._n),s.reshape(self._n,self._n),z.reshape(self._n,self._n),y,res,mark]
