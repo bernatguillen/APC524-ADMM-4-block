@@ -7,11 +7,10 @@ often looks like this::
 
     #!/usr/bin/env python
 
-    from admm4block import conic
-    from admm4block import dnnsdp
+    import admm4block
     
     #generate Copt, Aeq, beq, Ain, bin
-    mySDP = dnnsdp.DNNSDP(Copt, Aeq, beq, Ain, bin)
+    mySDP = admm4block.DNNSDP(Copt, Aeq, beq, Ain, bin)
     mySDP.Solve(sigma, tau, tol, nsteps)
 
 (Note the double-colon and 4-space indent formatting above.)

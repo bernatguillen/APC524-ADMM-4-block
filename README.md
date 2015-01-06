@@ -2,9 +2,42 @@ APC524-ADMM-4-block
 ===================
 
 Project for APC524, ADMM solver for conic programming 4 - block constraints. Written in Python and C++
+===========
+admm4block
+===========
 
-Interesting read: 
-www.pymolwiki.org/index.php/Advanced_Scripting
-https://docs.python.org/2/extending/extending.html 
+admm4block provides methods for solving conic programming problems and doubly non-negative SDP problems. Typical usage
+often looks like this::
 
-v0.0.0.0.-1 : Backbone of the program is ready. Nothing works except creating an SDP problem and converting it to a conic programming problem (without specifying K and Kp)
+    #!/usr/bin/env python
+
+    import admm4block
+    
+    #generate Copt, Aeq, beq, Ain, bin
+    mySDP = admm4block.DNNSDP(Copt, Aeq, beq, Ain, bin)
+    mySDP.Solve(sigma, tau, tol, nsteps)
+
+(Note the double-colon and 4-space indent formatting above.)
+
+Paragraphs are separated by blank lines. *Italics*, **bold**,
+and ``monospace`` look like this.
+
+
+conic
+=========
+
+conic includes the class ConicProgrammingProblem, with the following methods:
+
+* Solve
+
+* InitialConditions
+
+
+dnnsdp
+======
+
+dnnsdp includes the class DNNSDP, with the following methods:
+
+* toConic
+
+* Solve

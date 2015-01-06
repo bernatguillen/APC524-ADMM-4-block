@@ -1,4 +1,5 @@
 import numpy as np
+from admm4block.conic.conic import ConicProgrammingProblem
 
 class ErrorDim(Exception):
     def __init__(self, dim1, dim2):
