@@ -90,6 +90,18 @@ class ConicProgrammingProblem(object):
           tr(Ain[k]*X) <= bin[k] k = 0,...,M'-1
           X is SDP
           Elements of X nonnegative"""
+
+    def Print(self, x, y):
+        """Write the results of the primal and dual coefficients to an ouptput file. """
+        f = open('output', 'w')
+        f.write('The primal coefficients x are:')
+        s_x = ''.join(str(e) for e in x) # assume x and y are lists
+        f.write(s_x)
+        f.write('The dual coefficients y are:')
+        s_y = ''.join(str(e) for e in y)
+        f.write(s_y)
+        f.close()
+
 class DNNSDP(object):
 
     def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None):
