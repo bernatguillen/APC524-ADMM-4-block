@@ -17,7 +17,7 @@ class ErrorDim(Exception):
 class ConicProgrammingProblem(object):
 
     def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None, K=None, Kp=None):
-        self._n = Copt.shape[1]
+        self._n = Copt.shape[0]
         self._neq = Aeq.shape[0]
         if Ain is not None:
             self._nin = Ain.shape[0]
@@ -33,9 +33,9 @@ class ConicProgrammingProblem(object):
         self._K = K
 
     def __ADMM_noIn_step(self, X,s,z,y,AeqInv,sigma, tau):
-        s = self._K(self._Copt - z - np.dot(self._Aeq.T,y) - x/sigma)
+        s = self._K(self._Copt - z - np.dot(self._Aeq.T,y) - X/sigma,np.sqrt(self._n))
         y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) #does z change in K? Careful
-        z = self._Kp(self._Copt - s - np.dot(self._Aeq.T,y) - x/sigma)
+        z = self._Kp(self._Copt - s - np.dot(self._Aeq.T,y) - X/sigma)
         y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) #does s change in Kp? Careful
         X += tau*sigma*(s + z + np.dot(self._Aeq.T,y) - self._Copt)
         return [X, s, z, y]
@@ -43,10 +43,10 @@ class ConicProgrammingProblem(object):
     def __ADMM_noIn(self, X0, s0, z0, AeqInv, sigma, tau,tol,nsteps):
 
         def CheckConditions(x,s,z,y):
-            res1=abs(sum(sum((np.dot(self._Aeq,x)-self._beq)**2)))
-            res2=abs(sum(sum((s+z+np.dot(self._Aeq.T,y)-self._Copt)**2)))
-            res3=abs(sum(sum(x*s)))
-            res4=abs(sum(sum(x*z)))
+            res1=abs(np.sqrt(sum((np.dot(self._Aeq,x)-self._beq)**2)))
+            res2=abs(sum((s+z+np.dot(self._Aeq.T,y)-self._Copt)**2))
+            res3=abs(sum(x*s))
+            res4=abs(sum(x*z))
             return max(res1,res2,res3,res4)
 
         #tau should be less than (1+sqrt(5))/2 for convergence 
@@ -63,19 +63,19 @@ class ConicProgrammingProblem(object):
             status = 1
         return [X0, s0, z0, y, status]
 
-    def InitConditions(self,x0,s0,z0): #Is this necessary?
+    def InitConditions(self,x0=None,s0=None,z0=None): #Is this necessary?
         if x0 is None:
             x0 = np.dot(np.linalg.pinv(self._Aeq),self._beq)
         if s0 is None:
             s0 = x0
         if z0 is None:
             z0 = x0
-        s0 = self._K(s0)
+        s0 = self._K(s0,np.sqrt(self._n))
         z0 = self._Kp(z0)
         return [x0,s0,z0]
 
-    def Solve(sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
-        [X0,s0,z0] = InitConditions(X0,s0,z0)
+    def Solve(self,sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
+        [X0,s0,z0] = self.InitConditions(X0,s0,z0)
         if AeqInv is None:
             AeqInv = np.linalg.inv(np.dot(self._Aeq,self._Aeq.T))
         if self._nin == 0:
@@ -103,19 +103,27 @@ class DNNSDP(object):
 #number of columns of Aeq has to be n
 
     def toConic(self):
-        Aeq = self._Aeq[1].reshape(-1)
-        for Mat in self._Aeq[2:]:
-            Aeq = np.vstack((Aeq, Mat.reshape(self._n**2)))
+        if self._Aeq is not None:
+            Aeq = self._Aeq[0].reshape(-1)
+            for Mat in self._Aeq[1:]:
+                Aeq = np.vstack((Aeq, Mat.reshape(-1)))
         
-        beq = np.array(self._beq).transpose()
-        Ain = self._Ain[1].reshape(self._n**2)
-        for Mat in self._Ain[2:]:
-            Ain = np.vstack((Ain, Mat.reshape(self._n**2)))
+            beq = np.array(self._beq).transpose()
+        else:
+            Aeq = None
+            beq = None
+        if self._Ain is not None:
+            Ain = self._Ain[0].reshape(-1)
+            for Mat in self._Ain[1:]:
+                Ain = np.vstack((Ain, Mat.reshape(-1)))
 
-        bin = np.array(self._bin).transpose()
-
+            bin = np.array(self._bin).transpose()
+        else:
+            Ain = None
+            bin = None
         def Kp(X):
             X[X<0.] = 0
+            return X
 
         def K(X,n):
             matX = X.T.reshape(n,n)
@@ -124,5 +132,6 @@ class DNNSDP(object):
             C = np.dot(B[1], (B[0]*B[1]).T)
             return C.reshape(-1).T
 
-        ConicP = ConicProgramming(self._Copt.reshape(self._n**2),Aeq,beq,Ain,bin, K, Kp)
+        ConicP = ConicProgrammingProblem(self._Copt.reshape(-1),Aeq,beq,Ain,bin, K, Kp)
+        return ConicP
         """How do you want me to add Kp, K? As functions? Maybe add directly delta K* and delta K*?"""
