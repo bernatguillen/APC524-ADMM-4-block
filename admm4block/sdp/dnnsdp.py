@@ -49,7 +49,7 @@ class DNNSDP(object):
             matX = X.reshape(n,n)
             B = np.linalg.eigh(matX)
             B[0][B[0]<0.] = 0.
-            B[0][abs(B[0]<1e-9)] = 0.
+            #B[0][abs(B[0]<1e-9)] = 0.
             C = np.dot(B[1], (B[0]*B[1]).T)
             return C.reshape(-1).T
 
