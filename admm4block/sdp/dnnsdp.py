@@ -1,5 +1,6 @@
 import numpy as np
 from admm4block.conic.conic import ConicProgrammingProblem
+from scipy import linalg
 
 class ErrorDim(Exception):
     def __init__(self, dim1, dim2):
@@ -47,7 +48,7 @@ class DNNSDP(object):
 
         def K(X,n):
             matX = X.reshape(n,n)
-            B = np.linalg.eigh(matX)
+            B = linalg.eigh(matX)
             B[0][B[0]<0.] = 0.
             #B[0][abs(B[0]<1e-9)] = 0.
             C = np.dot(B[1], (B[0]*B[1]).T)

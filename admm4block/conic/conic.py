@@ -1,4 +1,5 @@
 import numpy as np
+from scipy import linalg
 
 class ErrorDim(Exception):
     def __init__(self, dim1, dim2):
@@ -38,12 +39,12 @@ class ConicProgrammingProblem(object):
         return s + self._K(-s,n)
         
     def __ADMM_noIn_step(self, X,s,z,y,AeqInv,sigma, tau):
-        s = self._Kdual(self._Copt - z - np.dot(self._Aeq.T,y) - X/sigma,np.sqrt(self._n))
-        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) 
-        z = self._Kpdual(self._Copt - s - np.dot(self._Aeq.T,y) - X/sigma)
-        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) 
-        X += tau*sigma*(s + z + np.dot(self._Aeq.T,y) - self._Copt)
-        return [X, s, z, y]
+        snew = self._Kdual(self._Copt - z - np.dot(self._Aeq.T,y) - X/sigma,np.sqrt(self._n))
+        ynew = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - snew - z))) 
+        znew = self._Kpdual(self._Copt - snew - np.dot(self._Aeq.T,ynew) - X/sigma)
+        ynew = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - snew - znew))) 
+        Xnew = X + tau*sigma*(snew + znew + np.dot(self._Aeq.T,ynew) - self._Copt)
+        return [Xnew, snew, znew, ynew]
 
     def __ADMM_noIn(self, X0, s0, z0, AeqInv, sigma, tau,tol,nsteps):
 
@@ -60,17 +61,19 @@ class ConicProgrammingProblem(object):
 
         #tau should be less than (1+sqrt(5))/2 for convergence 
         y = np.dot(AeqInv, np.dot(self._Aeq,self._Copt - s0 - z0))
-        res = CheckConditions(X0,s0,z0,y)
+        #res = CheckConditions(X0,s0,z0,y)
         k = 0
+        res = tol + 1
+
         while res > tol and k < nsteps:
             [X0, s0, z0, y] = self.__ADMM_noIn_step(X0,s0,z0,y,AeqInv,sigma,tau)
-            res = CheckConditions(X0,s0,z0,y)
+            #res = CheckConditions(X0,s0,z0,y) this causes the bug!!!
             k += 1
         return [X0, s0, z0, y, res]
 
-    def InitConditions(self,x0=None,s0=None,z0=None): #Is this necessary?
+    def InitConditions(self,x0=None,s0=None,z0=None, AeqInv=None): #Is this necessary?
         if x0 is None:
-            x0 = np.dot(np.linalg.pinv(self._Aeq),self._beq)
+            x0 = np.dot(np.dot(self._Aeq.T, AeqInv),self._beq)
         if s0 is None:
             s0 = x0
         if z0 is None:
@@ -80,9 +83,9 @@ class ConicProgrammingProblem(object):
         return [x0,s0,z0]
 
     def Solve(self,sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
-        [X0,s0,z0] = self.InitConditions(X0,s0,z0)
         if AeqInv is None:
-            AeqInv = np.linalg.inv(np.dot(self._Aeq,self._Aeq.T))
+            AeqInv = linalg.inv(np.dot(self._Aeq,self._Aeq.T))
+        [X0,s0,z0] = self.InitConditions(X0,s0,z0,AeqInv)
         if self._nin == 0:
             [x,s,z,y,res] = self.__ADMM_noIn(X0,s0,z0,AeqInv,sigma,tau,tol,nsteps)
             return [x,s,z,y,res,"no inequalities"]
