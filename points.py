@@ -27,4 +27,4 @@ for i in range(6):
 beq = [1.,1.,1.,1.,1.,1.,2.]
 
 mySDP = admm4block.DNNSDP(Copt, Aeq, beq)
-[X,s,z,y,res,_]=mySDP.Solve(10,0.6,0.1,10000)
+[X,s,z,y,res,_]=mySDP.Solve(1,1,0.1,100)
