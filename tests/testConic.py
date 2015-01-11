@@ -8,12 +8,13 @@ Created on Sat Jan 10 11:09:26 2015
 import unittest
 
 import numpy as np
+from scipy import linalg
 import admm4block
 
 class TestConic(unittest.TestCase):
     def testConeProjection(self):
         def K(X,n):
-            B = np.linalg.eigh(X)
+            B = linalg.eigh(X)
             B[0][B[0]<0.] = 0.
             #B[0][abs(B[0]<1e-9)] = 0.
             C = np.dot(B[1], (B[0]*B[1]).T)
@@ -36,7 +37,7 @@ class TestConic(unittest.TestCase):
             return X
         def K(X,n):
             matX = X.reshape(n,n)
-            B = np.linalg.eigh(matX)
+            B = linalg.eigh(matX)
             B[0][B[0]<0.] = 0.
             #B[0][abs(B[0]<1e-9)] = 0.
             C = np.dot(B[1], (B[0]*B[1]).T)
@@ -53,7 +54,7 @@ class TestConic(unittest.TestCase):
             return X
         def K(X,n):
             matX = X.reshape(n,n)
-            B = np.linalg.eigh(matX)
+            B = linalg.eigh(matX)
             B[0][B[0]<0.] = 0.
             #B[0][abs(B[0]<1e-9)] = 0.
             C = np.dot(B[1], (B[0]*B[1]).T)
