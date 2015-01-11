@@ -10,7 +10,7 @@ with open(path.join(here,'README.txt'), encoding = 'utf-8') as f:
 setup(
     name='admm4block',
     
-    version='0.1dev',
+    version='0.3dev',
     description='ADMM4block solver for DNNSDP',
     long_description = long_description,
     
