@@ -8,6 +8,8 @@ Created on Tue Jan 06 02:17:46 2015
 
 import numpy as np
 import admm4block
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
 def f(x1,x2,s):
     return np.exp(-np.sqrt(sum((x1-x2)**2))/s)
@@ -18,13 +20,33 @@ def W(points,s):
         for j in range(len(points)):
             A[i][j] = f(points[i],points[j],s)
     return A
+k = 8
+n = 24
+means = [4*np.array([np.cos(i*2*np.pi/k),np.sin(i*2*np.pi/k)]) for i in range(k)]
+covs =  [np.eye(2)/2. for i in range(k)]
+for i in range(k):
+    covs[i][0][1] = covs[i][1][0] = np.random.rand(1)[0]
+points = [np.random.multivariate_normal(means[i],covs[i],n/k) for i in range(k)]
+points = [vec for sublist in points for vec in sublist]
 
-points = [np.array([0.,0.]),np.array([6.,6.]),np.array([0.,1.]),np.array([5.,5.]),np.array([4.,5.]),np.array([5.,4.])]
+
 Copt= -W(points,4)
-Aeq = [np.zeros((6,6)) for i in range(6)] + [np.eye(6)]
-for i in range(6):
+Aeq = [np.zeros((n,n)) for i in range(n)] + [np.eye(n)]
+for i in range(n):
     Aeq[i][:,i] = 1.
-beq = [1.,1.,1.,1.,1.,1.,2.]
+beq = [1.]*n + [k]
 
 mySDP = admm4block.DNNSDP(Copt, Aeq, beq)
-[X,s,z,y,res,_]=mySDP.Solve(1,1,0.1,100)
+[X,s,z,y,res,_]=mySDP.Solve(1,1,0.1,1000)
+
+points = np.array(points)
+plt.scatter(points[:,0],points[:,1])
+
+colors = iter(cm.rainbow(np.linspace(0, 1, k)))
+s = set()
+for i in range(n):
+    if i not in s:
+        idx = np.where(X[:,i]>=1./n)[0].tolist()
+        s = s.union(set(idx))
+        plt.scatter(points[idx,0],points[idx,1],color = next(colors))
+        
