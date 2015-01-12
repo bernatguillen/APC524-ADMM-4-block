@@ -39,36 +39,42 @@ class ConicProgrammingProblem(object):
         return s + self._K(-s,n)
         
     def __ADMM_noIn_step(self, X,s,z,y,AeqInv,sigma, tau):
-        snew = self._Kdual(self._Copt - z - np.dot(self._Aeq.T,y) - X/sigma,np.sqrt(self._n))
-        ynew = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - snew - z))) 
-        znew = self._Kpdual(self._Copt - snew - np.dot(self._Aeq.T,ynew) - X/sigma)
-        ynew = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - snew - znew))) 
-        Xnew = X + tau*sigma*(snew + znew + np.dot(self._Aeq.T,ynew) - self._Copt)
-        return [Xnew, snew, znew, ynew]
+        s = self._Kdual(self._Copt - z - np.dot(self._Aeq.T,y) - X/sigma,np.sqrt(self._n))
+        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) 
+        z = self._Kpdual(self._Copt - s - np.dot(self._Aeq.T,y) - X/sigma)
+        y = np.dot(AeqInv,np.dot(self._Aeq,(self._Copt - s - z))) 
+        X = X + tau*sigma*(s + z + np.dot(self._Aeq.T,y) - self._Copt)
+        return [X, s, z, y]
 
     def __ADMM_noIn(self, X0, s0, z0, AeqInv, sigma, tau,tol,nsteps):
 
         def CheckConditions(x,s,z,y):
+            x = np.copy(x)
+            s = np.copy(s)
+            z = np.copy(z)
+            y = np.copy(y)
+            
             resP=np.sqrt(sum((np.dot(self._Aeq,x)-self._beq)**2))/(1+np.sqrt(sum(self._beq**2)))
             resD=np.sqrt(sum((s+z+np.dot(self._Aeq.T,y)-self._Copt)**2))/(1+np.sqrt(sum(self._Copt**2)))
-            resK=np.sqrt(sum(x-self._K(x,np.sqrt(self._n))**2))/(1+np.sqrt(sum(x**2)))
+            resK=np.sqrt(sum((x-self._K(x,np.sqrt(self._n)))**2))/(1+np.sqrt(sum(x**2)))
             resKp=np.sqrt(sum((x-self._Kp(x))**2))/(1+np.sqrt(sum(x**2)))
-            resKst=np.sqrt(sum(s-self._Kdual(s,np.sqrt(self._n))**2))/(1+np.sqrt(sum(s**2)))
-            resKpst=np.sqrt(sum((z-self._Kpdual(z))**2))/(1+np.sqrt(sum(z**2)))
+            resKst=np.sqrt(sum(self._K(-s,np.sqrt(self._n))**2))/(1+np.sqrt(sum(s**2)))
+            resKpst=np.sqrt(sum((self._Kp(-z))**2))/(1+np.sqrt(sum(z**2)))
             resC1 = abs(np.dot(x,s))/(1+np.sqrt(sum(x**2))+np.sqrt(sum(s**2)))
             resC2 = abs(np.dot(x,z))/(1+np.sqrt(sum(x**2))+np.sqrt(sum(z**2)))
             return max(resP,resD,resK,resKp,resKst,resKpst,resC1,resC2)
 
         #tau should be less than (1+sqrt(5))/2 for convergence 
         y = np.dot(AeqInv, np.dot(self._Aeq,self._Copt - s0 - z0))
-        #res = CheckConditions(X0,s0,z0,y)
+        res = CheckConditions(X0,s0,z0,y)
         k = 0
-        res = tol + 1
 
         while res > tol and k < nsteps:
             [X0, s0, z0, y] = self.__ADMM_noIn_step(X0,s0,z0,y,AeqInv,sigma,tau)
-            #res = CheckConditions(X0,s0,z0,y) this causes the bug!!!
+            if np.mod(k,20) == 0:
+                res = CheckConditions(X0,s0,z0,y) #this causes the bug!!!
             k += 1
+        res = CheckConditions(X0,s0,z0,y)
         return [X0, s0, z0, y, res]
 
     def InitConditions(self,x0=None,s0=None,z0=None, AeqInv=None): #Is this necessary?
