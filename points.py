@@ -20,12 +20,12 @@ def W(points,s):
         for j in range(len(points)):
             A[i][j] = f(points[i],points[j],s)
     return A
-k = 8
-n = 24
+k = input('Number of clusters: ')
+n = input('Number of points (multiple of k): ')
 means = [4*np.array([np.cos(i*2*np.pi/k),np.sin(i*2*np.pi/k)]) for i in range(k)]
 covs =  [np.eye(2)/2. for i in range(k)]
 for i in range(k):
-    covs[i][0][1] = covs[i][1][0] = np.random.rand(1)[0]
+    covs[i][0][1] = covs[i][1][0] = np.random.rand(1)[0] - 0.5
 points = [np.random.multivariate_normal(means[i],covs[i],n/k) for i in range(k)]
 points = [vec for sublist in points for vec in sublist]
 
@@ -37,16 +37,16 @@ for i in range(n):
 beq = [1.]*n + [k]
 
 mySDP = admm4block.DNNSDP(Copt, Aeq, beq)
-[X,s,z,y,res,_]=mySDP.Solve(1,1,0.1,1000)
+[X,s,z,y,res,_]=mySDP.Solve(2,1.6,1e-1,1000)
 
 points = np.array(points)
 plt.scatter(points[:,0],points[:,1])
 
 colors = iter(cm.rainbow(np.linspace(0, 1, k)))
-s = set()
+se = set()
 for i in range(n):
-    if i not in s:
+    if i not in se:
         idx = np.where(X[:,i]>=1./n)[0].tolist()
-        s = s.union(set(idx))
+        se = se.union(set(idx))
         plt.scatter(points[idx,0],points[idx,1],color = next(colors))
         
