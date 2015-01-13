@@ -4,12 +4,12 @@ from make_1Dsig import make_1Dsig
 import numpy as np
 import math
 
-L = 3
-time = 3
+L = 2
+time = 2
 noise = 0.0
 sigma = 1
 nsteps = 1000
-tau = 0.1
+tau = 1
 tol = 1e-3
 def index(i,k):
     return i + k*L
@@ -30,7 +30,8 @@ for t in range(0,time):
                 beq.append(0)
 for k in range(0,time-1):
     for l in range(k+1,time):
-        for i in range(0,L):
+	for i in range(1):
+        #for i in range(0,L):
             A = np.zeros((L*time,L*time))
             A[index(i,k),index(0,l):index(L,l)] = 1;
             Aeq.append(A)
@@ -43,5 +44,23 @@ for k in range(0,time-1):
                 Aeq.append(A)
                 beq.append(0)
 
+for k in range(0,time-1):
+	for l in range(k+1,time):
+		for i in range(0,L):
+			for j in range(0,L):
+				A = np.zeros((L*time,L*time))
+				A[index(i,k),index(j,l)] = 1
+				A[index(j,l),index(i,k)] = -1
+				Aeq.append(A)
+				beq.append(0)
+
 mySDP = admm4block.DNNSDP(Copt, Aeq, beq)
-[X,s,z,y,res,_]=mySDP.Solve(sigma, tau, tol, nsteps)
+print Aeq
+#Aeq1 = Aeq[0].reshape(-1)
+#for Mat in Aeq[1:]:
+#    Aeq1 = np.vstack((Aeq1, Mat.reshape(-1)))
+
+#beq = np.array(beq).transpose()
+#print np.dot(np.linalg.pinv(Aeq1),beq).reshape(L*time,L*time)
+#[X,s,z,y,res,_]=mySDP.Solve(sigma, tau, tol, nsteps)
+#print X
