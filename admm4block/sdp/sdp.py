@@ -1,26 +1,35 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jan 12 22:51:29 2015
+
+@author: Bernat
+"""
 import numpy as np
 from admm4block.conic.conic import ConicProgrammingProblem
 from scipy import linalg
 
-class ErrorDim(Exception):
-    def __init__(self, dim1, dim2):
-        self._dim1 = dim1
-        self._dim2 = dim2
-    def __str__(self):
-        errstr = "Dimension should be "+repr(self._dim1)+" but is "+repr(self._dim2)
-        return errstr
-
-
-class DNNSDP(object):
+class SDP(object):
 
     def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None):
+        def Kp(X):
+            return X
+
+        def K(X,n):
+            matX = X.reshape(n,n)
+            B = linalg.eigh(matX)
+            B[0][B[0]<0.] = 0.
+            #B[0][abs(B[0]<1e-9)] = 0.
+            C = np.dot(B[1], (B[0]*B[1]).T)
+            return C.reshape(-1).T
+       
         self._n = Copt.shape[0]
         self._Copt = Copt
         self._Aeq = Aeq
         self._beq = beq
         self._Ain = Ain
         self._bin = bin
-        
+        self._K = K
+        self._Kp = Kp
 #number of columns of Aeq has to be n
 
     def toConic(self):
@@ -42,19 +51,8 @@ class DNNSDP(object):
         else:
             Ain = None
             bin = None
-        def Kp(X):
-            X[X<0.] = 0
-            return X
 
-        def K(X,n):
-            matX = X.reshape(n,n)
-            B = linalg.eigh(matX)
-            B[0][B[0]<0.] = 0.
-            #B[0][abs(B[0]<1e-9)] = 0.
-            C = np.dot(B[1], (B[0]*B[1]).T)
-            return C.reshape(-1).T
-
-        ConicP = ConicProgrammingProblem(self._Copt.reshape(-1),Aeq,beq,Ain,bin, K, Kp)
+        ConicP = ConicProgrammingProblem(self._Copt.reshape(-1),Aeq,beq,Ain,bin, self._K, self._Kp)
         return ConicP
         
     def Solve(self, sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
@@ -67,3 +65,11 @@ class DNNSDP(object):
         myCon = self.toConic()
         [X,s,z,y,res,mark] = myCon.Solve(sigma,tau,tol,nsteps,X0,s0,z0,AeqInv)
         return [X.reshape(self._n,self._n),s.reshape(self._n,self._n),z.reshape(self._n,self._n),y,res,mark]
+        
+class DNNSDP(SDP):
+    def __init__(self,Copt=None, Aeq=None, beq=None, Ain=None, bin=None):
+        SDP.__init__(self,Copt, Aeq, beq, Ain, bin)
+        def Kp(X):
+            X[X<0.]=0.
+            return X
+        self._Kp = Kp
