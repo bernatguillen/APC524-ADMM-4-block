@@ -71,8 +71,9 @@ class ConicProgrammingProblem(object):
 
         while res > tol and k < nsteps:
             [X0, s0, z0, y] = self.__ADMM_noIn_step(X0,s0,z0,y,AeqInv,sigma,tau)
-            if np.mod(k,20) == 0:
-                res = CheckConditions(X0,s0,z0,y) #this causes the bug!!!
+            #if np.mod(k,20) == 0:
+             #   res = CheckConditions(X0,s0,z0,y) #this causes the bug!!!
+              #  print (k, res)
             k += 1
         res = CheckConditions(X0,s0,z0,y)
         return [X0, s0, z0, y, res]

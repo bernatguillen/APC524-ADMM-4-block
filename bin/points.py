@@ -37,12 +37,12 @@ for i in range(n):
 beq = [1.]*n + [k]
 
 mySDP = admm4block.DNNSDP(Copt, Aeq, beq)
-[X,s,z,y,res,_]=mySDP.Solve(2,1.6,1e-1,1000)
+[X,s,z,y,res,_]=mySDP.Solve(2,1.6,1e-3,10000)
 
 points = np.array(points)
 plt.scatter(points[:,0],points[:,1])
 
-colors = iter(cm.rainbow(np.linspace(0, 1, k)))
+colors = iter(cm.rainbow(np.linspace(0, 1, k+1)))
 se = set()
 for i in range(n):
     if i not in se:
