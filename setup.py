@@ -17,6 +17,7 @@ setup(
     url = 'https://github.com/bernatguillen/APC524-ADMM-4-block',
     
     author = 'Bernat Guillen, Michael Tarczon, Yuan Liu',
+    author_email = 'bernatp@princeton.edu',
     license='GNU GENERAL PUBLIC LICENSE',
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -31,8 +32,10 @@ setup(
         'Topic :: Scientific/Engineering :: Mathematics'
         ],
     keywords = 'Convex Optimization SDP',
-        
+    test_suite =  'nose.collector',
+    tests_require = ['nose'],
     packages=find_packages(exclude = ['contrib','docs','tests*']),
+    scripts=['bin/points.py'],
     install_requires=['numpy'],
 
 )
