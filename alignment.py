@@ -55,12 +55,11 @@ for k in range(0,time-1):
 				beq.append(0)
 
 mySDP = admm4block.DNNSDP(Copt, Aeq, beq)
-print Aeq
 #Aeq1 = Aeq[0].reshape(-1)
 #for Mat in Aeq[1:]:
 #    Aeq1 = np.vstack((Aeq1, Mat.reshape(-1)))
 
 #beq = np.array(beq).transpose()
 #print np.dot(np.linalg.pinv(Aeq1),beq).reshape(L*time,L*time)
-#[X,s,z,y,res,_]=mySDP.Solve(sigma, tau, tol, nsteps)
-#print X
+[X,s,z,y,res,_]=mySDP.Solve(sigma, tau, tol, nsteps)
+print X
