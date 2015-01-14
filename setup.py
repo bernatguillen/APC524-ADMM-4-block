@@ -4,7 +4,7 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
-with open(path.join(here,'README.txt'), encoding = 'utf-8') as f:
+with open(path.join(here,'docs/README.txt'), encoding = 'utf-8') as f:
     long_description = f.read()
     
 setup(
@@ -35,7 +35,7 @@ setup(
     test_suite =  'nose.collector',
     tests_require = ['nose'],
     packages=find_packages(exclude = ['contrib','docs','tests*']),
-    scripts=['bin/points.py'],
+    scripts=['bin/points.py','bin/alignment.py'],
     install_requires=['numpy'],
 
 )
