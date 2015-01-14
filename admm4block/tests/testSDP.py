@@ -26,7 +26,7 @@ class TestSDP(unittest.TestCase):
     def testDNNpositivity(self):
         X0 = np.array([[1.,2.],[2.,2.]])
         X = admm4block.DNNSDP(Copt = np.array([[1.,1.],[1.,1.]]), Aeq = [np.array([[1.,0.],[0.,0.]])], beq = [1.])
-        [Xf,_,_,_,_,_]=X.Solve(sigma=1,tau=1,tol=0.1,nsteps = 1, X0=X0,AeqInv=1.)
+        [Xf,_,_,_,_,_]=X.Solve(sigma=1,tau=1,tol=0.1,nsteps = 1, X0=X0)
         np.testing.assert_array_less(0,Xf)
     def testSDP(self):
         Aeq = [np.array([[1.,0.,1.],[0.,3.,7.],[1.,7.,5.]]),np.array([[0.,2.,8.],[2.,6.,0.],[8.,0.,4.]])]
