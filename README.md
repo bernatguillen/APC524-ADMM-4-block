@@ -14,6 +14,14 @@ often looks like this:
     #decide sigma, tau, tol and nsteps
     mySDP.Solve(sigma, tau, tol, nsteps)
 
+when importing admm4block, the class ConicProgrammingProblem, SDP and DNNSDP are already imported so the user can use::
+
+    admm4block.DNNSDP
+
+instead of::
+    
+    admm4block.sdp.DNNSDP
+
 conic
 =========
 
@@ -35,6 +43,30 @@ sdp includes the classes SDP and DNNSDP, with the following methods:
 * Solve: Solves the SDP or DNNSDP problem and returns [X,s,z,y,res,message] where X is the primal variable, and s,z,y are dual variables.
 
 * __init__ : Requires a list of nxn matrices Aeq, a list beq of the same length, and an nxn matrix Copt (symmetric). The projections onto the cones are automatically generated (thus be careful if you have a condition such as AX <= I)
+
+Build/Install
+=================
+
+The installation is pretty straightforward using python setup.py. For best results I recommend using pip with the following commands::
+
+    python setup.py sdist
+    cd dist
+    pip install admm4block
+
+Another way is simply running::
+
+    python setup.py install
+
+Apparently the first way is better for ensuring easy uninstall in the future with pip uninstall admm4block.
+
+Tests
+================
+
+The tests can be run also using setup.py::
+
+    python setup.py test
+
+Or importing them within the Python console.
 
 =================
 Known issues (v0.3dev)
