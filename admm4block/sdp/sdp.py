@@ -74,17 +74,19 @@ class SDP(object):
         self._K = K
         self._Kp = Kp
 #number of columns of Aeq has to be n
-
+        for i in range(self._n):
+            for j in range(i+1, self._n):
+                aux  = np.zeros((self._n, self._n))
+                aux[i,j] = 1.
+                aux[j,i] = -1.
+                self._Aeq.append(aux)
+                self._beq.append(0)
     def toConic(self):
-        if self._Aeq is not None:
-            Aeq = self._Aeq[0].reshape(-1)
-            for Mat in self._Aeq[1:]:
-                Aeq = np.vstack((Aeq, Mat.reshape(-1)))
+        Aeq = self._Aeq[0].reshape(-1)
+        for Mat in self._Aeq[1:]:
+            Aeq = np.vstack((Aeq, Mat.reshape(-1)))
         
-            beq = np.array(self._beq).transpose()
-        else:
-            Aeq = None
-            beq = None
+        beq = np.array(self._beq).transpose()
         if self._Ain is not None:
             Ain = self._Ain[0].reshape(-1)
             for Mat in self._Ain[1:]:
