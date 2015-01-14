@@ -8,9 +8,25 @@ import numpy as np
 from admm4block.conic.conic import ConicProgrammingProblem
 from scipy import linalg
 
+class ErrorConv(Exception):
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+
+class ErrorDist(Exception):
+    def __init__(self,value):
+        self.value = value
+    def __str__(self):
+return repr(self.value)
+class ErrorDivision(Exception):
+def __init__(self,value):
+self.value = value
+def __str__(self):
+return repr(self.value)
 class SDP(object):
 
-    def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None):
+    def __init__(self, Copt, Aeq, beq, Ain=None, bin=None):
         def Kp(X):
             return X
 
@@ -21,7 +37,8 @@ class SDP(object):
             #B[0][abs(B[0]<1e-9)] = 0.
             C = np.dot(B[1], (B[0]*B[1]).T)
             return C.reshape(-1).T
-       
+        if Aeq is not None and len(set([mat.shape for mat in Aeq])) != 1:
+            
         self._n = Copt.shape[0]
         self._Copt = Copt
         self._Aeq = Aeq
@@ -67,7 +84,7 @@ class SDP(object):
         return [X.reshape(self._n,self._n),s.reshape(self._n,self._n),z.reshape(self._n,self._n),y,res,mark]
         
 class DNNSDP(SDP):
-    def __init__(self,Copt=None, Aeq=None, beq=None, Ain=None, bin=None):
+    def __init__(self,Copt, Aeq, beq, Ain=None, bin=None):
         SDP.__init__(self,Copt, Aeq, beq, Ain, bin)
         def Kp(X):
             X[X<0.]=0.
