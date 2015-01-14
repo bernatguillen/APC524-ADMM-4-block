@@ -91,7 +91,10 @@ class ConicProgrammingProblem(object):
 
     def Solve(self,sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
         if AeqInv is None:
-            AeqInv = linalg.inv(np.dot(self._Aeq,self._Aeq.T))
+            try:
+                AeqInv = linalg.inv(np.dot(self._Aeq,self._Aeq.T))
+            except ValueError:
+                AeqInv = 1/np.dot(self._Aeq,self._Aeq.T)
         [X0,s0,z0] = self.InitConditions(X0,s0,z0,AeqInv)
         if self._nin == 0:
             [x,s,z,y,res] = self.__ADMM_noIn(X0,s0,z0,AeqInv,sigma,tau,tol,nsteps)

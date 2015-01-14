@@ -8,22 +8,18 @@ import numpy as np
 from admm4block.conic.conic import ConicProgrammingProblem
 from scipy import linalg
 
-class ErrorConv(Exception):
+class ErrorEqs(Exception):
     def __init__(self, value):
         self.value = value
     def __str__(self):
         return repr(self.value)
 
-class ErrorDist(Exception):
+class ErrorDim(Exception):
     def __init__(self,value):
         self.value = value
     def __str__(self):
-return repr(self.value)
-class ErrorDivision(Exception):
-def __init__(self,value):
-self.value = value
-def __str__(self):
-return repr(self.value)
+        return repr(self.value)
+
 class SDP(object):
 
     def __init__(self, Copt, Aeq, beq, Ain=None, bin=None):
@@ -37,8 +33,38 @@ class SDP(object):
             #B[0][abs(B[0]<1e-9)] = 0.
             C = np.dot(B[1], (B[0]*B[1]).T)
             return C.reshape(-1).T
-        if Aeq is not None and len(set([mat.shape for mat in Aeq])) != 1:
-            
+        
+        if Copt.shape[0] != Copt.shape[1]:
+            try:
+                raise ErrorDim(1)
+            except ErrorDim:
+                print 'Copt should be a square matrix'
+                return                
+        if len(set([mat.shape for mat in Aeq])) != 1 or Aeq[0].shape != Copt.shape:
+            try:
+                raise ErrorDim(2)
+            except ErrorDim:
+                print 'There is a problem with the dimensions of the equality constraints'
+                return
+        if len(Aeq)!=len(beq):
+            try:
+                raise ErrorEqs(len(beq))
+            except ErrorEqs:
+                print 'len(Aeq) should be equal to len(beq)'
+                return
+        if Ain is not None and (len(set([mat.shape for mat in Ain])) != 1 or Ain[0].shape != Copt.shape):
+            try:
+                raise ErrorDim(2)
+            except ErrorDim:
+                print 'There is a problem with the dimensions of the inequality constraints'
+                return
+        if Ain is not None and len(Ain)!=len(bin):
+            try:
+                raise ErrorEqs(len(beq))
+            except ErrorEqs:
+                print 'len(Ain) should be equal to len(bin)'
+                return
+
         self._n = Copt.shape[0]
         self._Copt = Copt
         self._Aeq = Aeq
