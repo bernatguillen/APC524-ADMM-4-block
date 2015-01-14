@@ -52,17 +52,6 @@ for k in range(0,time-1):
                 A[index((i+j+1)%L,k),index(j+1,l)] = -1
                 Aeq.append(A)
                 beq.append(0)
-
-for k in range(0,time-1):
-	for l in range(k+1,time):
-		for i in range(0,L):
-			for j in range(0,L):
-				A = np.zeros((L*time,L*time))
-				A[index(i,k),index(j,l)] = 1
-				A[index(j,l),index(i,k)] = -1
-				Aeq.append(A)
-				beq.append(0)
-
 mySDP = admm4block.DNNSDP(Copt, Aeq, beq)
 #Aeq1 = Aeq[0].reshape(-1)
 #for Mat in Aeq[1:]:
