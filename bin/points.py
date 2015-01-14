@@ -37,7 +37,7 @@ for i in range(n):
 beq = [1.]*n + [k]
 
 mySDP = admm4block.DNNSDP(Copt, Aeq, beq)
-[X,s,z,y,res,_]=mySDP.Solve(2,1.6,1e-3,10000)
+[X,s,z,y,res,_]=mySDP.Solve(2,1.6,1e-3,100)
 
 points = np.array(points)
 plt.scatter(points[:,0],points[:,1])
