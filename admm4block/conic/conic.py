@@ -17,7 +17,7 @@ class ErrorDim(Exception):
           x is in Kp """
 class ConicProgrammingProblem(object):
 
-    def __init__(self, Copt=None, Aeq=None, beq=None, Ain=None, bin=None, K=None, Kp=None):
+    def __init__(self, Copt, Aeq, beq, K, Kp, Ain=None, bin=None):
         self._n = Copt.shape[0]
         self._neq = Aeq.shape[0]
         if Ain is not None:

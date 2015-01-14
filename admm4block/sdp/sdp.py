@@ -95,7 +95,7 @@ class SDP(object):
             Ain = None
             bin = None
 
-        ConicP = ConicProgrammingProblem(self._Copt.reshape(-1),Aeq,beq,Ain,bin, self._K, self._Kp)
+        ConicP = ConicProgrammingProblem(self._Copt.reshape(-1),Aeq,beq, self._K, self._Kp,Ain,bin)
         return ConicP
         
     def Solve(self, sigma, tau, tol, nsteps,X0 = None, s0 = None, z0 = None, AeqInv = None):
