@@ -95,6 +95,7 @@ Roughly speaking, ADMM consists on optimizing the variables in an alternating wa
  
 In this case, we can be more specific with the algorithm, and as seen in [ref], it proceeds as follows:
 \begin{algorithm}
+\TitleOfAlgo{Conic-ADMM3c}
 \KwData{$\sigma > 0$, $\tau >0$, $s^0 \in \mathcal{K}^*$, $z^0 \in \mathcal{K}_p^*$, $x^0$ such that $\mathcal{A}_Ex^0 = b_E$. $y^0_E = (\mathcal{A}_E\mathcal{A}_E^*)^{-1}\mathcal{A}_E(c-s^0-z^0)$.}
 \While{k < nsteps and err > tol}{
 	$s^{k+1} = \text{arg min} L_\sigma(s,z^k,y_E^k;x^k)=\Pi_{\mathcal{K}^*}(c-z^k-\mathcal{A}_E^*y_E^k-\sigma^{-1}x^k)$\;
@@ -173,8 +174,99 @@ To-Do list:
 \begin{enumerate}
 \item Add "easy" restrictions input.
 \item Automatically add slack variables.
-\item Create \texttt{__main__} function that will ask the inverse.
+\item Create \texttt{main} function that will ask the inverse.
 \item Direct output.
 \end{enumerate}
+
+\section{Implementation}
+\subsection{Structure of the package}
+This package is implemented following the instructions on Python's documentation [ref]. The package is called \texttt{admm4block}, with subpackages \texttt{conic} and \texttt{sdp}. It also includes the subpackages \texttt{tests}. The example scripts are (currently) in \texttt{/bin} and the documentation is in \texttt{/docs}. The file setup.py includes information about the package, references to the subpackages and scripts, and a way (thanks to \texttt{setuptools}) to automatically run the tests simply running \texttt{python setup.py test}. This package can be uploaded to PyPI and installed using pip.
+\subsection{Dependencies}
+The first Idea was to use only \texttt{numpy}, but I (Bernat Guillen) decided to use \texttt{scipy.linalg} for calculating the inverse and pseudoinverse, since I read somewhere that it used a different backend that was more precise. Unfortunately I cannot find the reference (it was a question in Stackoverflow). In the future probably Cython and some form of MPI will be used.
+\subsection{ConicProgrammingProblem}
+The implementation of this class was pretty straightforward. However there have been (and there still are) some issues that presented problems, especially the way of passing parameters into functions in Python. 
+
+The dual projection is defined directly as the result of Moreau's decomposition Theorem.
+The algorithm itself was implemented exactly as explained in the Introduction. I (Bernat Guillen) want to implement an adaptative stepsize in $\sigma$, but it is not specified in [ref] so it will require more time. The tolerance checking, however, has presented more problems. In every step the algorithm has to check the following:
+\begin{align*}
+\eta_P = \frac{||\mathcal{A}_Ex-b_E||}{1+||b_E||},&\eta_D=\frac{||\mathcal{A}_E^*y_E+s+z-c||}{1+||c||},&\eta_\mathcal{K}=\frac{||x-\Pi_{\mathcal{K}}(x)||}{1+||x||},&\eta_p = \frac{||x-\Pi_{\mathcal{K}_p}(x)||}{1+||x||},&\\
+\eta_{\mathcal{K}^*} = \frac{||s-\Pi_{\mathcal{K^*}}(s)||}{1+||s||},&\eta_{p^*} = \frac{||z - \Pi_{\mathcal{K}_p^*}(z)||}{1+||z||},&\eta_{C_1} = \frac{|\langle x,s \rangle|}{1+||x|| +||s||},&\eta_{C_2} = \frac{|\langle x,z \rangle |}{1+||x|| +||z||}.&
+\end{align*}
+From these we compute $$\eta = \text{max}\{\eta_P,\eta_D,\eta_{\mathcal{K}},\eta_p,\eta_{\mathcal{K}^*}, \eta_{p^*}, \eta_{C_1},\eta_{C_2}\}$$
+However, something in the implementation of the class (probably of the projections) caused the values of the variables to change when checking them, jeopardizing thus the success of the algorithm. In order to solve it I (Bernat Guillen) opted for the more naive solution: hard copy every variable before checking. This is, of course, very slow. Especially so with the huge number of equalities that includes the SDP program. For now this means that we only check the error at the end of the program (so it does not stop when it goes below \texttt{tol}). 
+\subsubsection{Profiling}
+Using the package \texttt{cProfile}, we can see that the operation that is repeated the most times is \texttt{numpy.dot} followed by the projection onto the cone. However in real applications this is not very much compared to the cost of converting from \texttt{SDP} to \texttt{ConicProgrammingProblem} as we will see later.
+
+There are two private methods in this class, one of them calculates a step in the algorithm and the other one is an interface between the method \texttt{Solve} and the private method step. This is done with the idea of using Cython to optimize some calculations in mind.
+\subsection{SDP}
+The implementation of this class presents only two complications. First of all, how do we project a matrix to $\mathcal{S}^n_+$? It is well known that the projection is achieved simply by getting the eigenvalue decomposition $X = Q\text{diag}(\lambda_1,\dots,\lambda_n)Q^T$ and truncating them:
+\begin{equation}
+\Pi_{\mathcal{S}^n_+}(X) = Q\text{diag}(\text{max}\{\lambda_1,0\},\dots,\text{max}\{\lambda_n,0\})Q^T
+\end{equation}
+In order to do this, the function \texttt{scipy.linalg.eigh} is used. \texttt{eigh} automatically assumes the matrix is symmetric and thus it is quite faster than \texttt{eig}.
+
+The other problem is, how do we store the variables? How do we convert them to a \texttt{ConicProgrammingProblem}? The methodology used in this project, although it is consistent with famous packages such as \texttt{Sedumi} for \texttt{MATLAB}, is very slow. For now, the package works in the space $\mathbb{R}^{n^2}$ and therefore the symmetry conditions have to be added by hand (that is $\frac{n(n-1)}{2}$ extra conditions). All the conditions are then converted into vectors and stacked into a big matrix for the \texttt{ConicProgrammingProblem} object using \texttt{np.vstack}. There is discussion regarding this in other projects [ref] seen in github, too, and apparently there is no standard answer. 
+
+In my (Bernat Guillen) opinion, it will be faster to consider the space $\mathbb{R}^{\frac{n(n+1)}{2}}$ (that is the dimension of $\mathcal{X}$) instead of $\mathbb{R}^{n^2}$. However this means that we need a transformation from $(\mathcal{X},\langle,\rangle)$ to $(\mathbb{R}^{\frac{n(n+1)}{2}},\langle,\rangle)$ that is well defined, or else add the possibility to define a dot product as an input to the  \texttt{ConicProgrammingProblem}. I have yet to decide which one is better in terms of design and implementation. What is sure is that this method will reduce considerably the number of restrictions, which will in turn reduce the dimension of $\mathcal{A}_E\mathcal{A}_E^*$.
+
+\subsubsection{Profiling}
+
+Using again \texttt{cProfile} we can see that \texttt{np.vstack} is by far the neckbottle of the problem. This, together with the previous reasoning makes a good cause to try to reduce the number of restrictions, even if this means complicating the vectorization of the problem.
+
+\subsection{Tests}
+
+Using the \texttt{unittest} package, eight tests have been written.
+In \texttt{testConic} we see four tests:
+\begin{enumerate}
+\item \texttt{testConeProjection}: Tests that the projection in the cone works well and does not modify the parameter introduced.
+\item \texttt{testSelfDualCone}: Tests that the non-negative cone is indeed self-dual.
+\item \texttt{testStep}: Tests that a single step performed by the class works as expected.
+\item \texttt{testSolvelown}: Tests that the solution is the expected one with a simple problem.
+\end{enumerate}
+In \texttt{testSDP} we see four more tests:
+\begin{enumerate}
+\item \texttt{testStepSDP}: Tests that a single step (using the method \texttt{Solve} with \texttt{nsteps=1}) works as expected.
+\item \texttt{testSolvelownDNN}: Tests that the solution of a simple problem is the expected one.
+\item \texttt{testDNNpositivity}: Tests that the solution of an SDPDNN problem is indeed positive.
+\item \texttt{testSDP}: Tests that the solution of an SDP is indeed PSD.
+\end{enumerate}
+
+\subsection{Scripts}
+Two scripts have been written. One of them (Michael Tarczon) compares the output of a DNNSDP problem between our method and MATLAB CVX method. 
+
+The other one (Bernat Guillen) generates $n$ random points and divides them into $k$ clusters (that is a DNNSDP problem). Currently more than $50$ points results in very slow performance in a \texttt{Lenovo Thinkpad w540}. There are $1276$ constraints for a problem with $k=5$, $n=50$. With $nsteps = 1000$ the problem takes $15 s$, $9$ of them are used in \texttt{np.vstack} (i.e. transforming the problem!). The result has an error of $10^{-11}$ approx, which means that with a good tolerance control it would be faster, but without a good transformation from SDP into a Conic Programming Problem at most we could halve the time. In Fig.~\ref{fig:kclust} we can see the final result of one case.
+\begin{figure}[h]
+\label{fig:kclust}
+\centering
+\includegraphics[scale=0.7]{images/kclustering.png} 
+\caption{k-clustering of $50$ points into 5 clusters}
+
+\end{figure}
+
+These scripts are compiled with the option "scripts" of \texttt{setup.py} and should be callable from the shell. However in the near future the idea is to put them as modules callable from the \texttt{main} function of the package as a tutorial. 
+
+\subsection{To Do list}
+In this subsection we will put together all the aspects that need to be improved.
+\begin{enumerate}
+\item Tolerance Checking fast and reliable.
+\item \texttt{main} function with scripts.
+\item Good transformation from SDP into Conic Programming Problem.
+\item More tests
+\item Good input/output.
+\end{enumerate}
+
+\section{Documentation}
+The package itself is not too large, thus the documentation is a simple \text{README.md} for github and a \text{README.txt} for pyPI and the installation. In it there are detailed explanations on how to install and run the package.
+
+\section{Breakdown of the work}
+Bernat Guillen: \texttt{SDP}, \texttt{DNNSDP}, \texttt{ConicProgrammingProblem} classes. \texttt{unittest} files. \texttt{points.py} script. All the structure of the package (including \texttt{setup.py}, \texttt{init files}, documentation and this report. Github: $68$ commits, 
+
+Michael Tarczon: First \texttt{C++} implementation of the solver but eventually discarded. Files \texttt{alignment.py} and \texttt{alignment.m} to compare results. Very valuable input on some issues of the coding regarding restrictions and SDP programming.
+
+Yuan Liu: Initially, interface between Python and C++, eventually discarded. Print method on \texttt{ConicProgrammingClass}.
+
+Special thanks to Yuehaw Khoo, who proposed the project back when we were 6 people in the team and was always available to solve doubts.
+
+
 %%% End document
 \end{document}
