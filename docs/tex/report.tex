@@ -56,7 +56,13 @@
 \begin{document}
 \maketitle
 \section{Introduction}
-This is the project report for the final project of APC524. Our group worked on the implementation of a 3-block ADMM solver based on \cite{sun2014}. This solver is designed for problems of the form:
+
+This is the project report for the final project of APC524. 
+
+Semidefinite programming (SDP), or optimization over the cone of semidefinite programming, is an important optimization problem.  Many of our members work with Professor Amit Singer in math, and we often encounter SDPs from relaxing NP-hard problems.  Therefore, these SDPs can provide valuable approximate solutions.  However, SDPs are extremely costly to solve, and it is important to find an algorithm that can limit the number of iterations needed.  Recently, Alternating Direction Method of Multipliers (ADMM) has emerged as a viable algorithm, and there are few existing SDP packages that use ADMM, particularly an ADMM algorithm guaranteed to converge.
+
+This was the inspiration for our final project of APC524. Our group worked on the implementation of a 3-block ADMM solver based on \cite{sun2014}. This solver is designed for problems of the form:
+
 \begin{equation}
 \label{eqCP}
 	\text{max}\{\langle -c,x\rangle | \mathcal{A}_E x = b_E\;,\;\mathcal{A}_I x\geq b_I, \;x\in \mathcal{K},\; x\in\mathcal{K}_p\}
@@ -84,7 +90,7 @@ L_{\sigma} (s,z,y_E;x) := & \delta_{\mathcal{K}^*}(s) + \delta_{\mathcal{K}_p^*}
 & + \frac{\sigma}{2}||s+z+\mathcal{A}_E^* y_E - c||^2 
 \end{align*}
 
-Most of the current solvers for conic programming problems use the well-known Interior Point Methods or (as this project) Alternating Direction Method of Multipliers (ADMM). However, neither the Interior Point Methods nor the ADMM are proven to converge to the optimal solution when there are three blocks of constraints (that is, the two cones and the equality constraints). In this project we implement a variation of ADMM that has a proof of convergence.
+Most of the current solvers for conic programming problems use the well-known Interior Point Methods or (as this project) ADMM. However, neither the Interior Point Methods nor the ADMM are proven to converge to the optimal solution when there are three blocks of constraints (that is, the two cones and the equality constraints). In this project we implement a variation of ADMM that has a proof of convergence.
 
 Roughly speaking, ADMM consists on optimizing the variables in an alternating way, that is to say (in the case of a 2-block ADMM):
 \begin{enumerate}
@@ -203,7 +209,7 @@ The implementation of this class presents only two complications. First of all, 
 \begin{equation}
 \Pi_{\mathcal{S}^n_+}(X) = Q\text{diag}(\text{max}\{\lambda_1,0\},\dots,\text{max}\{\lambda_n,0\})Q^T
 \end{equation}
-In order to do this, the function \texttt{scipy.linalg.eigh} is used. \texttt{eigh} automatically assumes the matrix is symmetric and thus it is quite faster than \texttt{eig}. Note that the initialization checks for consistency in the dimensions and length of lists.
+In order to do this, the function \texttt{scipy.linalg.eigh} is used. \texttt{eigh} automatically assumes the matrix is symmetric and thus it is quite faster than \texttt{eig}.
 
 The other problem is, how do we store the variables? How do we convert them to a \texttt{ConicProgrammingProblem}? The methodology used in this project, although it is consistent with famous packages such as \texttt{Sedumi} for \texttt{MATLAB}, is very slow. For now, the package works in the space $\mathbb{R}^{n^2}$ and therefore the symmetry conditions have to be added by hand (that is $\frac{n(n-1)}{2}$ extra conditions). All the conditions are then converted into vectors and stacked into a big matrix for the \texttt{ConicProgrammingProblem} object using \texttt{np.vstack}. There is discussion regarding this in other projects \cite{gitsym} seen in github, too, and apparently there is no standard answer. 
 
@@ -232,7 +238,8 @@ In \texttt{testSDP} we see four more tests:
 \end{enumerate}
 
 \subsection{Scripts}
-Two scripts have been written. One of them (Michael Tarczon) compares the output of a DNNSDP problem between our method and MATLAB CVX method. 
+Two scripts have been written. One of them (Michael Tarczon) compares the output of a DNNSDP problem between our method and MATLAB CVX method.  The particular problem that this script tries to solve is a problem in signal processing called multireference alignment.  In this problem, we are given $n$ noisy observations of unknown signal $x$ of length $L$, and between each observation, the signal is (circularly) shifted by an unknown amount. The goal is to recover the unknown signal $x$, but finding the MLE of multireference alignment is known to be NP-hard.  We can write a SDP to approximate the solution $x$ though.  The comparison between CVX and MATLAB requives MATLAB, CVX (downloaded from http://cvxr.com/cvx/download/), and Mlabwrap to interact with MATLAB from Python (downloaded from http://mlabwrap.sourceforge.net/, installation instructions there as well). In the future, once the package is more finalized, we can do testing on the accuracy of our ADMM solver by comparing our solution to CVX, and we can do performance comparisons as well.
+
 
 The other one (Bernat Guillen) generates $n$ random points and divides them into $k$ clusters (that is a DNNSDP problem). Currently more than $50$ points results in very slow performance in a \texttt{Lenovo Thinkpad w540}. There are $1276$ constraints for a problem with $k=5$, $n=50$. With $nsteps = 1000$ the problem takes $15 s$, $9$ of them are used in \texttt{np.vstack} (i.e. transforming the problem!). The result has an error of $10^{-11}$ approx, which means that with a good tolerance control it would be faster, but without a good transformation from SDP into a Conic Programming Problem at most we could halve the time. In Fig.~\ref{fig:kclust} we can see the final result of one case.
 \begin{figure}[h]
@@ -261,7 +268,7 @@ The package itself is not too large, thus the documentation is a simple \text{RE
 \section{Breakdown of the work}
 Bernat Guillen: \texttt{SDP}, \texttt{DNNSDP}, \texttt{ConicProgrammingProblem} classes. \texttt{unittest} files. \texttt{points.py} script. All the structure of the package (including \texttt{setup.py}, \texttt{init} files, documentation and this report). Github: $72$ commits, $2640 ++, 1417--$
 
-Michael Tarczon: First \texttt{C++} implementation of the solver but eventually discarded. Files \texttt{alignment.py} and \texttt{alignment.m} to compare results. Input on some issues of the coding regarding restrictions and SDP programming. Github: $12$ commits, $285++$, $113--$
+Michael Tarczon: First \texttt{C++} implementation of the solver but eventually discarded. Files \texttt{alignment.py} and \texttt{alignment.m} to compare results. Very valuable input on some issues of the coding regarding restrictions and SDP programming. Github: $12$ commits, $285++$, $113--$
 
 Yuan Liu: Initially, interface between Python and C++, eventually discarded. Print method on \texttt{ConicProgrammingClass}. Github: $3$ commits, $29++$, $1--$
 
