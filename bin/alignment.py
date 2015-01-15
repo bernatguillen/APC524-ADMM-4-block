@@ -2,6 +2,8 @@
 import admm4block
 import numpy as np
 import math
+import time as timing
+from mlab.releases import latest_release
 
 def make_1Dsig(time,L,sigma):
     I = np.random.randn(L,1)
@@ -12,19 +14,20 @@ def make_1Dsig(time,L,sigma):
         shift = shifts[t]
         movie[:,t:t+1] = np.roll(I,-shift) + sigma*np.random.randn(L,1)
     return (movie,shifts)
-    
-L = 2
-time = 2
+
+# Initial parameters for the multireference alignment SDP problem
+L = 5
+time = 5
 noise = 0.0
-sigma = 1
-nsteps = 1000
-tau = 1
-tol = 1e-3
 def index(i,k):
     return i + k*L
 (movie,shifts) = make_1Dsig(L,time,noise)
+
+# Solve using our ADMM package
+# First build Copy, Aeq, and beq matrices
 Copt = np.reshape(movie,(L*time,1),'F')
 Copt = np.multiply(Copt,Copt.T)
+start_admm = timing.clock()
 Aeq = []
 beq = []
 for t in range(0,time):
@@ -40,7 +43,6 @@ for t in range(0,time):
 for k in range(0,time-1):
     for l in range(k+1,time):
 	for i in range(1):
-        #for i in range(0,L):
             A = np.zeros((L*time,L*time))
             A[index(i,k),index(0,l):index(L,l)] = 1;
             Aeq.append(A)
@@ -52,12 +54,12 @@ for k in range(0,time-1):
                 A[index((i+j+1)%L,k),index(j+1,l)] = -1
                 Aeq.append(A)
                 beq.append(0)
+# Conditions for the solver
+sigma = 1
+tau = 1
+tol = 1e-3
+nsteps = 1000
 mySDP = admm4block.DNNSDP(Copt, Aeq, beq)
-#Aeq1 = Aeq[0].reshape(-1)
-#for Mat in Aeq[1:]:
-#    Aeq1 = np.vstack((Aeq1, Mat.reshape(-1)))
-
-#beq = np.array(beq).transpose()
-#print np.dot(np.linalg.pinv(Aeq1),beq).reshape(L*time,L*time)
 [X,s,z,y,res,_]=mySDP.Solve(sigma, tau, tol, nsteps)
-print X
+end_admm = timing.clock()
+print "Time used by ADMM: " + str(end_admm - start_admm) + " s"
