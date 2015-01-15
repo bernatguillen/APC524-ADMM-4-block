@@ -108,46 +108,73 @@ In this case, we can be more specific with the algorithm, and as seen in [ref], 
 
 Where $\Pi_\mathcal{C}(x)$ is the projection onto $\mathcal{C}$ of $x$. In [ref] and in our code we make extensive use of Moreau's decomposition theorem that states $x = \Pi_{\mathcal{C}}(x)+ \Pi_{\mathcal{C}^*}(-x)$ or, in other words, $\Pi_{\mathcal{C}^*}(x) = x + \Pi_{\mathcal{C}}(-x)$.
 
+\section{Project planning and design}
 
-\subsection{Heading on level 2 (subsection)}
-Lorem ipsum dolor sit amet, consectetuer adipiscing elit. 
-\begin{align}
-	A = 
-	\begin{bmatrix}
-	A_{11} & A_{21} \\
-  	A_{21} & A_{22}
-	\end{bmatrix}
-\end{align}
-Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem.
+In the beginning of the project development, our group was fairly bigger (6 people) and so it was decided that the project would be implemented in Python and some pieces of the code (eigenvalue decomposition, inverse or pseudoinverse calculation) would be done in C++. We split the team in two groups, one working on the Python frontend, converting SDP, DNNSDP, SOCP into conic programming and managing input/output while the other team would work on implementing the algorithm.
 
-\subsubsection{Heading on level 3 (subsubsection)}
-Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim.
+Then three of the partners dropped the course just before the holidays and the planning had to change.
 
-\paragraph{Heading on level 4 (paragraph)}
-Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. 
+In the end, \texttt{admm4block} is a $100\%$ Python package. 
 
+\subsection{ConicProgrammingProblem}
 
-\section{Lists}
+The main class is \texttt{ConicProgrammingProblem} which contains the parameters required for a Conic Programming Problem and the methods for solving it. In order to initialize the class, the user has to input the parameters $c$, $\mathcal{A}_E$, $b_E$, $\Pi_{\mathcal{K}}$ and $\Pi_{\mathcal{K}_p}$, defined as:
 
-\subsection{Example for list (3*itemize)}
 \begin{itemize}
-	\item First item in a list 
-		\begin{itemize}
-		\item First item in a list 
-			\begin{itemize}
-			\item First item in a list 
-			\item Second item in a list 
-			\end{itemize}
-		\item Second item in a list 
-		\end{itemize}
-	\item Second item in a list 
+\item $c$ a \texttt{numpy.ndarray} object of shape $(1,n)$,
+\item $\mathcal{A}_E$ a \texttt{numpy.ndarray} object of shape $(m_E,n)$ (where $m_E$ is the number of equalities),
+\item $b_E$ a \texttt{numpy.ndarray} of shape $(1,m_E)$,
+\item $\Pi_{\mathcal{K}}$ a function with inputs $x$ a \texttt{numpy.ndarray} and $n$ an integer and output \\$\hat{x}$ a \texttt{numpy.ndarray},
+\item $\Pi_{\mathcal{K}_p}$ a function with input and output a \texttt{numpy.ndarray}.
 \end{itemize}
 
-\subsection{Example for list (enumerate)}
+Optionally in the future versions, $\mathcal{A}_I$ and $b_I$ can be inputted (the inequality restrictions).
+The class also stores the projections onto the duals as functions with the same input and output as the projections onto the primal cones, along with the dimension of the problem, the number of equalities and the number of inequalities.
+
+The class also has three public methods. These are:
+\begin{itemize}
+\item \texttt{InitConditions} returns feasible initial $x^0,s^0,z^0$ (\texttt{numpy.ndarray} objects). The user can optionally put some of his/her choice.
+\item \texttt{Solve} returns final primal and dual variables $x,s,z,y$ (all of them \texttt{numpy.ndarray} objects), the error (explained in Section [ref]), and a status. It needs parameters $\sigma$, $\tau$, \texttt{tol} and \texttt{nsteps}, the first two required for the algorithm, the latter for the stopping conditions. It also accepts initial conditions and even $(\mathcal{A}_E\mathcal{A}_E^*)^{-1}$ as inputs if the user so desires.
+\item \texttt{Print} which prints the output into a file.
+\end{itemize}
+
+There are also two private methods (step and solve) used as interface in case the program is extended to C++.
+\subsection{SDP}
+
+Although the main class is \texttt{ConicProgrammingProblem}, we realized that most of the problems users are interested in are SDP (Semidefinite Programming) problems, and DNNSDP (Doubly Non-Negative SDP) problems (for which this method is the only one with proof of convergence). The first idea was to create classes for SOCP and LP too, but they were eventually considered out of the scope of the project. SDP consists on optimizing a linear function over the set $\mathcal{X}$ of symmetric $n\times n$ matrices. If we define $\langle C, X \rangle = \text{Tr}(CX)$ then an SDP problem can be written as:
+\begin{equation}
+\text{max}\{\langle C, X\rangle | \langle\mathcal{A}^i_E, X\rangle = b_E^i \; \forall i \in \{1,\dots,m_{E}\}, \langle\mathcal{A}^i_I,X\rangle\geq b_I^i \forall i \in \{1,\dots,m_I\}, X \in \mathcal{S}^n_+, X \in \mathcal{K}_p\}  
+\end{equation}
+
+In this case $\mathcal{S}^n_+$ is the cone of Positive Semidefinite (PSD) matrices. That is, $\{X\in\mathcal{X} | v^T X v \geq 0 \forall v \in \mathbb{R}^n\}$, or more succinctly written, $X\succeq 0$. It is relatively easy to transform this problem into a Conic Programming Problem simply vectorizing, due to the fact that $\text{Tr}(CX)$ is $\langle c, x \rangle _{\mathbb{R}^{n\times n}}$ if we simply put all the rows of the matrices together in a vector. Note that in that case, we must add the symmetry condition as equality restrictions, or otherwise the projection onto the cone can lead to problems. This will be discussed further in Section [ref]. $\mathcal{K}_p$ can refer to $\mathcal{X}$ in the case of SDP, or to $X\geq 0$ (all the coefficients greater than $0$) in the case of DNNSDP. 
+\subsubsection{SDP}
+Going back to the design of the package, \texttt{SDP} is the class created for SDP problems. In order to initialize it, the user inputs $C$, $\mathcal{A}_E$, $b_E$ (and optionally $\mathcal{A}_I$, $b_I$), defined as:
+\begin{itemize}
+\item $C$ is a \texttt{numpy.ndarray} with shape $(n,n)$. It has to be symmetric.
+\item $\mathcal{A}_E$ is a \texttt{list} of \texttt{numpy.ndarray} with shapes $(n,n)$. It contains $m_E$ objects.
+\item $b_E$ is a \texttt{list} of $m_E$ \texttt{float} objects.
+\end{itemize}
+
+The class also stores the projections onto $\mathcal{S}^n_+$ and $\mathcal{K}_p$ (in this case the identity), and adds the symmetry conditions to $\mathcal{A}_E$ and $b_E$.
+
+\texttt{SDP} has two public methods. These are:
+\begin{itemize}
+\item \texttt{toConic} which returns an object of the class \texttt{ConicProgrammingProblem} resulting from the vectorization of the SDP problem.
+\item \texttt{Solve} which admits exactly the same parameters\\ as \texttt{ConicProgrammingProblem.Solve} and returns also the same but converted back into the "matrix" world. Note that e.g. the inverse of the matrix is also accepted but the user has to convert it first to the conic form and calculate the inverse in that form. Some big matrices would be costly to invert numerically but very easy (i.e. identity most of the times) so an experienced user might want to input these for speedup. Later in Section [ref] more will be discussed about this.
+\end{itemize}
+\subsubsection{DNNSDP}
+\texttt{DNNSDP} inherits all the variables and methods from \texttt{SDP} but the projection onto $\mathcal{K}_p$ is changed.
+\subsection{Input, Output and UI}
+The idea for the I/O and UI is clear, but unfortunately out of this project. I (Bernat Guillen) will probably continue with the project and add these features in the future. We will start explaining the idea and then provide a list of to-dos.
+
+The User Interface would have the same syntax as Python. First of all the user can select whether he will be solving an SDP, a DNNSDP or a Conic Programming Problem. The user can also select a few examples included (for now) in the folder \texttt{bin} of the package. Then the user will have to introduce $c$, $\mathcal{A}_E$, $b_E$, $\mathcal{A}_I$ and $b_I$ in the correct form, as well as the projection functions in the case of the Conic Programming Problem. However, some conditions such as $X_{ij} = 1$ or $X_{:j} = v$ can be introduced in Python syntax, i.e. \texttt{X[i,j] == 1} or \texttt{X[:,j]==v}. These options are not yet delimited but will be included. The program adds the slack variables required. Before solving the problem, the program will present the user $\mathcal{A}_E\mathcal{A}_E^*$ and ask for an inverse in case there exists one (it can be a matrix or a function). The program then solves the problem using the ADMM method, returning all variables, the error and the status to a file introduced by the user. The idea is to make it as simple as possible to the user, but always remembering that people who need to solve Conic Programming Problems, SDP problems or DNNSDP problems are usually knowledgeable in the matter. Currently, however, the user needs to add the slack variables, and introduce all equality restrictions as matrices, which makes the package less convenient. Of course, the package's classes and methods can also be used by themselves without the UI.
+
+To-Do list:
 \begin{enumerate}
-	\item First item in a list 
-	\item Second item in a list 
-	\item Third item in a list
+\item Add "easy" restrictions input.
+\item Automatically add slack variables.
+\item Create \texttt{__main__} function that will ask the inverse.
+\item Direct output.
 \end{enumerate}
 %%% End document
 \end{document}
