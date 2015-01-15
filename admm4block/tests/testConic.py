@@ -21,6 +21,7 @@ class TestConic(unittest.TestCase):
             return C
         X0 = np.array([[-1.,0.],[0.,1.]])
         np.testing.assert_array_almost_equal(K(X0,3),np.array([[0.,0.],[0.,1.]]))
+        np.testing.assert_array_almost_equal(X0,np.array([[-1.,0.],[0.,1.]]))
         
     def testSelfDualCone(self):
         def K(X):
