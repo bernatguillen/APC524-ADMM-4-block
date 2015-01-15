@@ -36,6 +36,6 @@ setup(
     tests_require = ['nose'],
     packages=find_packages(exclude = ['contrib','docs','tests*']),
     scripts=['bin/points.py','bin/alignment.py'],
-    install_requires=['numpy'],
+    install_requires=['numpy','scipy']
 
 )
