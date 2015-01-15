@@ -1,4 +1,4 @@
-function [X,cvx_toc] = alignment(movie,tol)
+function [X,cvxtime] = alignment(movie,tol)
 
 [L,time] = size(movie);
 
@@ -37,5 +37,5 @@ cvx_begin quiet
             end
         end 
 cvx_end 
-
+cvxtime = cvx_toc;
 end
