@@ -56,6 +56,7 @@
 \begin{document}
 \maketitle
 \section{Introduction}
+Semidefinite programming (SDP), or optimization over the cone of semidefinite matrices, is an important optimization problem.  Many of our members work with Professor Amit Singer in the mathematics department, and we often encounter SDPs from relaxing NP-hard problems.  Therefore, these SDPs can provide valuable approximate solutions.  However, SDPs are extremely costly to solve, and it is important to find an algorithm that can limit the number of iterations needed.  Recently, Alternating Direction Method of Multipliers (ADMM) has emerged as a viable algorithm, and there are few existing SDP packages that use ADMM, particularly an ADMM algorithm guaranteed to converge.
 
 This is the project report for the final project of APC524. 
 
@@ -239,7 +240,6 @@ In \texttt{testSDP} we see four more tests:
 
 \subsection{Scripts}
 Two scripts have been written. One of them (Michael Tarczon) compares the output of a DNNSDP problem between our method and MATLAB CVX method.  The particular problem that this script tries to solve is a problem in signal processing called multireference alignment.  In this problem, we are given $n$ noisy observations of unknown signal $x$ of length $L$, and between each observation, the signal is (circularly) shifted by an unknown amount. The goal is to recover the unknown signal $x$, but finding the MLE of multireference alignment is known to be NP-hard.  We can write a SDP to approximate the solution $x$ though.  The comparison between CVX and MATLAB requives MATLAB, CVX (downloaded from http://cvxr.com/cvx/download/), and Mlabwrap to interact with MATLAB from Python (downloaded from http://mlabwrap.sourceforge.net/, installation instructions there as well). In the future, once the package is more finalized, we can do testing on the accuracy of our ADMM solver by comparing our solution to CVX, and we can do performance comparisons as well.
-
 
 The other one (Bernat Guillen) generates $n$ random points and divides them into $k$ clusters (that is a DNNSDP problem). Currently more than $50$ points results in very slow performance in a \texttt{Lenovo Thinkpad w540}. There are $1276$ constraints for a problem with $k=5$, $n=50$. With $nsteps = 1000$ the problem takes $15 s$, $9$ of them are used in \texttt{np.vstack} (i.e. transforming the problem!). The result has an error of $10^{-11}$ approx, which means that with a good tolerance control it would be faster, but without a good transformation from SDP into a Conic Programming Problem at most we could halve the time. In Fig.~\ref{fig:kclust} we can see the final result of one case.
 \begin{figure}[h]
