@@ -44,6 +44,11 @@ sdp includes the classes SDP and DNNSDP, with the following methods:
 
 * __init__ : Requires a list of nxn matrices Aeq, a list beq of the same length, and an nxn matrix Copt (symmetric). The projections onto the cones are automatically generated (thus be careful if you have a condition such as AX <= I)
 
+Examples
+================
+
+To see examples please refer to /bin/ where you will find two scripts commented and ready to use.
+
 Build/Install
 =================
 
@@ -72,9 +77,8 @@ Or importing them within the Python console.
 Known issues (v0.3dev)
 =================
 
-* Checking the tolerance in every iteration is not only too costly but also in some way affects the solutions (I have not been able to fix it)
+* Checking the tolerance in every iteration is too costly.
 * There is no adaptative control for the parameter sigma.
-* The error starts decreasing and then increases (all of it coming from <X,S> = 0 !) after ~ 500 steps. It's possible that this is due to numerical error of the eigh function because it happens when n is larger than 50. The error never goes below 1e-2 for big enough matrices
 * There is no multiprocessor implementation of any kind.
 * Input and output is bad, for now the user has to create the list of matrices instead of giving normal conditions such as X[i][i] = 1.
 * The scripts are supposed to be created but they don't get saved, or I don't know how to run them. Will put them as callable modules (__main__) in the future.
