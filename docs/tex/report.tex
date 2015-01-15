@@ -56,7 +56,7 @@
 \begin{document}
 \maketitle
 \section{Introduction}
-This is the project report for the final project of APC524. Our group worked on the implementation of a 3-block ADMM solver based on [cit required]. This solver is designed for problems of the form:
+This is the project report for the final project of APC524. Our group worked on the implementation of a 3-block ADMM solver based on \cite{sun2014}. This solver is designed for problems of the form:
 \begin{equation}
 \label{eqCP}
 	\text{max}\{\langle -c,x\rangle | \mathcal{A}_E x = b_E\;,\;\mathcal{A}_I x\geq b_I, \;x\in \mathcal{K},\; x\in\mathcal{K}_p\}
@@ -77,7 +77,7 @@ The dual of the problem (\ref{eqCP}) is:
 
 In (\ref{eqCPdual}), $\mathcal{K}^*$ stands for the dual of a cone, i.e. $\{d \in \mathcal{X} | \langle d,x \rangle \geq 0 \forall x \in mathcal{K}$, and $\mathcal{A}_i^*$ denotes the adjoint of $\mathcal{A}$ (usually the transpose unless the base of the space is not orthonormal). 
 
-Skipping all the intermediate steps (that can be found in [ref]), we write the augmented Lagrangian of the problem (after including slack variables), which is key to develop the method:
+Skipping all the intermediate steps (that can be found in \cite{sun2014}), we write the augmented Lagrangian of the problem (after including slack variables), which is key to develop the method:
 
 \begin{align*}
 L_{\sigma} (s,z,y_E;x) := & \delta_{\mathcal{K}^*}(s) + \delta_{\mathcal{K}_p^*}(z) + \langle -b_E,y_E \rangle  + \langle x,s+z+\mathcal{A}_E^* y_E - c\rangle \\
@@ -93,7 +93,7 @@ Roughly speaking, ADMM consists on optimizing the variables in an alternating wa
 \item Update primal linear variable assuming the rest are all fix
 \end{enumerate}
  
-In this case, we can be more specific with the algorithm, and as seen in [ref], it proceeds as follows:
+In this case, we can be more specific with the algorithm, and as seen in \cite{sun2014}, it proceeds as follows:
 \begin{algorithm}
 \TitleOfAlgo{Conic-ADMM3c}
 \KwData{$\sigma > 0$, $\tau >0$, $s^0 \in \mathcal{K}^*$, $z^0 \in \mathcal{K}_p^*$, $x^0$ such that $\mathcal{A}_Ex^0 = b_E$. $y^0_E = (\mathcal{A}_E\mathcal{A}_E^*)^{-1}\mathcal{A}_E(c-s^0-z^0)$.}
@@ -107,7 +107,7 @@ In this case, we can be more specific with the algorithm, and as seen in [ref], 
 	\caption{Algorithm Conic-ADMM3c}
 \end{algorithm}
 
-Where $\Pi_\mathcal{C}(x)$ is the projection onto $\mathcal{C}$ of $x$. In [ref] and in our code we make extensive use of Moreau's decomposition theorem that states $x = \Pi_{\mathcal{C}}(x)+ \Pi_{\mathcal{C}^*}(-x)$ or, in other words, $\Pi_{\mathcal{C}^*}(x) = x + \Pi_{\mathcal{C}}(-x)$.
+Where $\Pi_\mathcal{C}(x)$ is the projection onto $\mathcal{C}$ of $x$. In \cite{sun2014} and in our code we make extensive use of Moreau's decomposition theorem that states $x = \Pi_{\mathcal{C}}(x)+ \Pi_{\mathcal{C}^*}(-x)$ or, in other words, $\Pi_{\mathcal{C}^*}(x) = x + \Pi_{\mathcal{C}}(-x)$.
 
 \section{Project planning and design}
 
@@ -135,7 +135,7 @@ The class also stores the projections onto the duals as functions with the same 
 The class also has three public methods. These are:
 \begin{itemize}
 \item \texttt{InitConditions} returns feasible initial $x^0,s^0,z^0$ (\texttt{numpy.ndarray} objects). The user can optionally put some of his/her choice.
-\item \texttt{Solve} returns final primal and dual variables $x,s,z,y$ (all of them \texttt{numpy.ndarray} objects), the error (explained in Section [ref]), and a status. It needs parameters $\sigma$, $\tau$, \texttt{tol} and \texttt{nsteps}, the first two required for the algorithm, the latter for the stopping conditions. It also accepts initial conditions and even $(\mathcal{A}_E\mathcal{A}_E^*)^{-1}$ as inputs if the user so desires.
+\item \texttt{Solve} returns final primal and dual variables $x,s,z,y$ (all of them \texttt{numpy.ndarray} objects), the error (explained in Section \ref{sec:cp}), and a status. It needs parameters $\sigma$, $\tau$, \texttt{tol} and \texttt{nsteps}, the first two required for the algorithm, the latter for the stopping conditions. It also accepts initial conditions and even $(\mathcal{A}_E\mathcal{A}_E^*)^{-1}$ as inputs if the user so desires.
 \item \texttt{Print} which prints the output into a file.
 \end{itemize}
 
@@ -147,7 +147,7 @@ Although the main class is \texttt{ConicProgrammingProblem}, we realized that mo
 \text{max}\{\langle C, X\rangle | \langle\mathcal{A}^i_E, X\rangle = b_E^i \; \forall i \in \{1,\dots,m_{E}\}, \langle\mathcal{A}^i_I,X\rangle\geq b_I^i \forall i \in \{1,\dots,m_I\}, X \in \mathcal{S}^n_+, X \in \mathcal{K}_p\}  
 \end{equation}
 
-In this case $\mathcal{S}^n_+$ is the cone of Positive Semidefinite (PSD) matrices. That is, $\{X\in\mathcal{X} | v^T X v \geq 0 \forall v \in \mathbb{R}^n\}$, or more succinctly written, $X\succeq 0$. It is relatively easy to transform this problem into a Conic Programming Problem simply vectorizing, due to the fact that $\text{Tr}(CX)$ is $\langle c, x \rangle _{\mathbb{R}^{n\times n}}$ if we simply put all the rows of the matrices together in a vector. Note that in that case, we must add the symmetry condition as equality restrictions, or otherwise the projection onto the cone can lead to problems. This will be discussed further in Section [ref]. $\mathcal{K}_p$ can refer to $\mathcal{X}$ in the case of SDP, or to $X\geq 0$ (all the coefficients greater than $0$) in the case of DNNSDP. 
+In this case $\mathcal{S}^n_+$ is the cone of Positive Semidefinite (PSD) matrices. That is, $\{X\in\mathcal{X} | v^T X v \geq 0 \forall v \in \mathbb{R}^n\}$, or more succinctly written, $X\succeq 0$. It is relatively easy to transform this problem into a Conic Programming Problem simply vectorizing, due to the fact that $\text{Tr}(CX)$ is $\langle c, x \rangle _{\mathbb{R}^{n\times n}}$ if we simply put all the rows of the matrices together in a vector. Note that in that case, we must add the symmetry condition as equality restrictions, or otherwise the projection onto the cone can lead to problems. This will be discussed further in Section \ref{sec:SDP}. $\mathcal{K}_p$ can refer to $\mathcal{X}$ in the case of SDP, or to $X\geq 0$ (all the coefficients greater than $0$) in the case of DNNSDP. 
 \subsubsection{SDP}
 Going back to the design of the package, \texttt{SDP} is the class created for SDP problems. In order to initialize it, the user inputs $C$, $\mathcal{A}_E$, $b_E$ (and optionally $\mathcal{A}_I$, $b_I$), defined as:
 \begin{itemize}
@@ -161,7 +161,7 @@ The class also stores the projections onto $\mathcal{S}^n_+$ and $\mathcal{K}_p$
 \texttt{SDP} has two public methods. These are:
 \begin{itemize}
 \item \texttt{toConic} which returns an object of the class \texttt{ConicProgrammingProblem} resulting from the vectorization of the SDP problem.
-\item \texttt{Solve} which admits exactly the same parameters\\ as \texttt{ConicProgrammingProblem.Solve} and returns also the same but converted back into the "matrix" world. Note that e.g. the inverse of the matrix is also accepted but the user has to convert it first to the conic form and calculate the inverse in that form. Some big matrices would be costly to invert numerically but very easy (i.e. identity most of the times) so an experienced user might want to input these for speedup. Later in Section [ref] more will be discussed about this.
+\item \texttt{Solve} which admits exactly the same parameters\\ as \texttt{ConicProgrammingProblem.Solve} and returns also the same but converted back into the "matrix" world. Note that e.g. the inverse of the matrix is also accepted but the user has to convert it first to the conic form and calculate the inverse in that form. Some big matrices would be costly to invert numerically but very easy (i.e. identity most of the times) so an experienced user might want to input these for speedup.
 \end{itemize}
 \subsubsection{DNNSDP}
 \texttt{DNNSDP} inherits all the variables and methods from \texttt{SDP} but the projection onto $\mathcal{K}_p$ is changed.
@@ -180,14 +180,14 @@ To-Do list:
 
 \section{Implementation}
 \subsection{Structure of the package}
-This package is implemented following the instructions on Python's documentation [ref]. The package is called \texttt{admm4block}, with subpackages \texttt{conic} and \texttt{sdp}. It also includes the subpackages \texttt{tests}. The example scripts are (currently) in \texttt{/bin} and the documentation is in \texttt{/docs}. The file setup.py includes information about the package, references to the subpackages and scripts, and a way (thanks to \texttt{setuptools}) to automatically run the tests simply running \texttt{python setup.py test}. This package can be uploaded to PyPI and installed using pip.
+This package is implemented following the instructions on Python's documentation \cite{pythondocs}. The package is called \texttt{admm4block}, with subpackages \texttt{conic} and \texttt{sdp}. It also includes the subpackages \texttt{tests}. The example scripts are (currently) in \texttt{/bin} and the documentation is in \texttt{/docs}. The file setup.py includes information about the package, references to the subpackages and scripts, and a way (thanks to \texttt{setuptools}) to automatically run the tests simply running \texttt{python setup.py test}. This package can be uploaded to PyPI and installed using pip.
 \subsection{Dependencies}
 The first Idea was to use only \texttt{numpy}, but I (Bernat Guillen) decided to use \texttt{scipy.linalg} for calculating the inverse and pseudoinverse, since I read somewhere that it used a different backend that was more precise. Unfortunately I cannot find the reference (it was a question in Stackoverflow). In the future probably Cython and some form of MPI will be used.
-\subsection{ConicProgrammingProblem}
+\subsection{ConicProgrammingProblem\label{sec:cp}}
 The implementation of this class was pretty straightforward. However there have been (and there still are) some issues that presented problems, especially the way of passing parameters into functions in Python. 
 
 The dual projection is defined directly as the result of Moreau's decomposition Theorem.
-The algorithm itself was implemented exactly as explained in the Introduction. I (Bernat Guillen) want to implement an adaptative stepsize in $\sigma$, but it is not specified in [ref] so it will require more time. The tolerance checking, however, has presented more problems. In every step the algorithm has to check the following:
+The algorithm itself was implemented exactly as explained in the Introduction. I (Bernat Guillen) want to implement an adaptative stepsize in $\sigma$, but it is not specified in \cite{sun2014} so it will require more time. The tolerance checking, however, has presented more problems. In every step the algorithm has to check the following:
 \begin{align*}
 \eta_P = \frac{||\mathcal{A}_Ex-b_E||}{1+||b_E||},&\eta_D=\frac{||\mathcal{A}_E^*y_E+s+z-c||}{1+||c||},&\eta_\mathcal{K}=\frac{||x-\Pi_{\mathcal{K}}(x)||}{1+||x||},&\eta_p = \frac{||x-\Pi_{\mathcal{K}_p}(x)||}{1+||x||},&\\
 \eta_{\mathcal{K}^*} = \frac{||s-\Pi_{\mathcal{K^*}}(s)||}{1+||s||},&\eta_{p^*} = \frac{||z - \Pi_{\mathcal{K}_p^*}(z)||}{1+||z||},&\eta_{C_1} = \frac{|\langle x,s \rangle|}{1+||x|| +||s||},&\eta_{C_2} = \frac{|\langle x,z \rangle |}{1+||x|| +||z||}.&
@@ -198,14 +198,14 @@ However, something in the implementation of the class (probably of the projectio
 Using the package \texttt{cProfile}, we can see that the operation that is repeated the most times is \texttt{numpy.dot} followed by the projection onto the cone. However in real applications this is not very much compared to the cost of converting from \texttt{SDP} to \texttt{ConicProgrammingProblem} as we will see later.
 
 There are two private methods in this class, one of them calculates a step in the algorithm and the other one is an interface between the method \texttt{Solve} and the private method step. This is done with the idea of using Cython to optimize some calculations in mind.
-\subsection{SDP}
+\subsection{SDP\label{sec:SDP}}
 The implementation of this class presents only two complications. First of all, how do we project a matrix to $\mathcal{S}^n_+$? It is well known that the projection is achieved simply by getting the eigenvalue decomposition $X = Q\text{diag}(\lambda_1,\dots,\lambda_n)Q^T$ and truncating them:
 \begin{equation}
 \Pi_{\mathcal{S}^n_+}(X) = Q\text{diag}(\text{max}\{\lambda_1,0\},\dots,\text{max}\{\lambda_n,0\})Q^T
 \end{equation}
 In order to do this, the function \texttt{scipy.linalg.eigh} is used. \texttt{eigh} automatically assumes the matrix is symmetric and thus it is quite faster than \texttt{eig}. Note that the initialization checks for consistency in the dimensions and length of lists.
 
-The other problem is, how do we store the variables? How do we convert them to a \texttt{ConicProgrammingProblem}? The methodology used in this project, although it is consistent with famous packages such as \texttt{Sedumi} for \texttt{MATLAB}, is very slow. For now, the package works in the space $\mathbb{R}^{n^2}$ and therefore the symmetry conditions have to be added by hand (that is $\frac{n(n-1)}{2}$ extra conditions). All the conditions are then converted into vectors and stacked into a big matrix for the \texttt{ConicProgrammingProblem} object using \texttt{np.vstack}. There is discussion regarding this in other projects [ref] seen in github, too, and apparently there is no standard answer. 
+The other problem is, how do we store the variables? How do we convert them to a \texttt{ConicProgrammingProblem}? The methodology used in this project, although it is consistent with famous packages such as \texttt{Sedumi} for \texttt{MATLAB}, is very slow. For now, the package works in the space $\mathbb{R}^{n^2}$ and therefore the symmetry conditions have to be added by hand (that is $\frac{n(n-1)}{2}$ extra conditions). All the conditions are then converted into vectors and stacked into a big matrix for the \texttt{ConicProgrammingProblem} object using \texttt{np.vstack}. There is discussion regarding this in other projects \cite{gitsym} seen in github, too, and apparently there is no standard answer. 
 
 In my (Bernat Guillen) opinion, it will be faster to consider the space $\mathbb{R}^{\frac{n(n+1)}{2}}$ (that is the dimension of $\mathcal{X}$) instead of $\mathbb{R}^{n^2}$. However this means that we need a transformation from $(\mathcal{X},\langle,\rangle)$ to $(\mathbb{R}^{\frac{n(n+1)}{2}},\langle,\rangle)$ that is well defined, or else add the possibility to define a dot product as an input to the  \texttt{ConicProgrammingProblem}. I have yet to decide which one is better in terms of design and implementation. What is sure is that this method will reduce considerably the number of restrictions, which will in turn reduce the dimension of $\mathcal{A}_E\mathcal{A}_E^*$.
 
@@ -271,12 +271,27 @@ Although we would like to have a reasonable explanation of why there is a large 
 
 \section{Conclusions}
 
-We have presented a package that implements the algorithm explained in [ref] in \texttt{Python}. This package solves Conic Programming Problems, which include problems such as Semidefinite Programming and Doubly Non-Negative Semidefinite Programming. It is a fast algorithm with proof of convergence, the first of its kind that has a proof of convergence for problems with four sets of restrictions. Even though the package needs some improvements, it is fully functional and can be applied to many research problems now. 
+We have presented a package that implements the algorithm explained in \cite{sun2014} in \texttt{Python}. This package solves Conic Programming Problems, which include problems such as Semidefinite Programming and Doubly Non-Negative Semidefinite Programming. It is a fast algorithm with proof of convergence, the first of its kind that has a proof of convergence for problems with four sets of restrictions. Even though the package needs some improvements, it is fully functional and can be applied to many research problems now. 
 
-\texttt{admm4block} can be installed using \texttt{pip} and also includes some example scripts, documentation and tests. It provides (in our opinion) a good balance between the flexibility a researcher needs and the easiness a regular user wants. It includes the classes 
+\texttt{admm4block} can be installed using \texttt{pip} and also includes some example scripts, documentation and tests. It provides (in our opinion) a good balance between the flexibility a researcher needs and the easiness a regular user wants. 
+
+It includes the classes 
 \texttt{ConicProgrammingProblem} (for general problems), \texttt{SDP} and \texttt{DNNSDP} (for more specific problems). In the future it will include a User Interface and more kinds of problems such as LP or SOCP.
 
 
+\begin{thebibliography}{9}
+
+\bibitem{sun2014}
+  {{Sun}, D. and {Toh}, K.-C. and {Yang}, L.},
+  \emph{A Convergent 3-Block Semi-Proximal Alternating Direction Method of Multipliers for Conic Programming with 4-Type of Constraints}.
+  ArXiv e-prints,
+  1404.5378,
+  2014.
+\bibitem{pythondocs}
+	\url{https://docs.python.org/2/distutils/index.html}
+\bibitem{gitsym}
+	\url{https://github.com/cvxgrp/scs/issues/31}
+\end{thebibliography}
 
 
 %%% End document
