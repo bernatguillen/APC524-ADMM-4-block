@@ -1,4 +1,4 @@
-function [X,cvx_status] = alignment(movie,tol)
+function [X,cvx_toc] = alignment(movie,tol)
 
 [L,time] = size(movie);
 
