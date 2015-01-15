@@ -56,7 +56,9 @@
 \begin{document}
 \maketitle
 \section{Introduction}
-This is the project report for the final project of APC524. Our group worked on the implementation of a 3-block ADMM solver based on [cit required]. This solver is designed for problems of the form:
+Semidefinite programming (SDP), or optimization over the cone of semidefinite programming, is an important optimization problem.  Many of our members work with Professor Amit Singer in math, and we often encounter SDPs from relaxing NP-hard problems.  Therefore, these SDPs can provide valuable approximate solutions.  However, SDPs are extremely costly to solve, and it is important to find an algorithm that can limit the number of iterations needed.  Recently, Alternating Direction Method of Multipliers (ADMM) has emerged as a viable algorithm, and there are few existing SDP packages that use ADMM, particularly an ADMM algorithm guarenteed to converge.
+
+This was the inspiration for our final project of APC524. Our group worked on the implementation of a 3-block ADMM solver based on [cit required]. This solver is designed for problems of the form:
 \begin{equation}
 \label{eqCP}
 	\text{max}\{\langle -c,x\rangle | \mathcal{A}_E x = b_E\;,\;\mathcal{A}_I x\geq b_I, \;x\in \mathcal{K},\; x\in\mathcal{K}_p\}
@@ -84,7 +86,7 @@ L_{\sigma} (s,z,y_E;x) := & \delta_{\mathcal{K}^*}(s) + \delta_{\mathcal{K}_p^*}
 & + \frac{\sigma}{2}||s+z+\mathcal{A}_E^* y_E - c||^2 
 \end{align*}
 
-Most of the current solvers for conic programming problems use the well-known Interior Point Methods or (as this project) Alternating Direction Method of Multipliers (ADMM). However, neither the Interior Point Methods nor the ADMM are proven to converge to the optimal solution when there are three blocks of constraints (that is, the two cones and the equality constraints). In this project we implement a variation of ADMM that has a proof of convergence.
+Most of the current solvers for conic programming problems use the well-known Interior Point Methods or (as this project) ADMM. However, neither the Interior Point Methods nor the ADMM are proven to converge to the optimal solution when there are three blocks of constraints (that is, the two cones and the equality constraints). In this project we implement a variation of ADMM that has a proof of convergence.
 
 Roughly speaking, ADMM consists on optimizing the variables in an alternating way, that is to say (in the case of a 2-block ADMM):
 \begin{enumerate}
@@ -232,7 +234,8 @@ In \texttt{testSDP} we see four more tests:
 \end{enumerate}
 
 \subsection{Scripts}
-Two scripts have been written. One of them (Michael Tarczon) compares the output of a DNNSDP problem between our method and MATLAB CVX method. 
+Two scripts have been written. One of them (Michael Tarczon) compares the output of a DNNSDP problem between our method and MATLAB CVX method.  The particular problem that this script tries to solve is a problem in signal processing called multireference alignment.  In this problem, we are given $n$ noisy observations of unknown signal $x$ of length $L$, and between each observation, the signal is (circularly) shifted by an unknown amount. The goal is to recover the unknown signal $x$, but finding the MLE of multireference alignment is known to be NP-hard.  We can write a SDP to approximate the solution $x$ though.
+
 
 The other one (Bernat Guillen) generates $n$ random points and divides them into $k$ clusters (that is a DNNSDP problem). Currently more than $50$ points results in very slow performance in a \texttt{Lenovo Thinkpad w540}. There are $1276$ constraints for a problem with $k=5$, $n=50$. With $nsteps = 1000$ the problem takes $15 s$, $9$ of them are used in \texttt{np.vstack} (i.e. transforming the problem!). The result has an error of $10^{-11}$ approx, which means that with a good tolerance control it would be faster, but without a good transformation from SDP into a Conic Programming Problem at most we could halve the time. In Fig.~\ref{fig:kclust} we can see the final result of one case.
 \begin{figure}[h]
