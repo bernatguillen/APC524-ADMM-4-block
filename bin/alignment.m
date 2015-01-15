@@ -1,4 +1,4 @@
-function [X,cvx_status] = alignment(movie)
+function [X,cvx_status] = alignment(movie,tol)
 
 [L,time] = size(movie);
 
@@ -8,6 +8,15 @@ idx = @(i,k) (i-1)*L+k;
 
 cvx_begin quiet
     cvx_solver sedumi
+    % See http://cvxr.com/cvx/doc/solver.html for a detailed description of
+    % how to control the tolerance in CVX
+    if tol == 1
+        cvx_precision low
+    elseif tol == 2
+        cvx_precision default
+    else
+        cvx_precision high
+    end
     variable X(L*time,L*time) semidefinite
     maximize(trace(Copt*X))
     subject to
