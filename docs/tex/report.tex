@@ -205,7 +205,7 @@ The implementation of this class presents only two complications. First of all, 
 \begin{equation}
 \Pi_{\mathcal{S}^n_+}(X) = Q\text{diag}(\text{max}\{\lambda_1,0\},\dots,\text{max}\{\lambda_n,0\})Q^T
 \end{equation}
-In order to do this, the function \texttt{scipy.linalg.eigh} is used. \texttt{eigh} automatically assumes the matrix is symmetric and thus it is quite faster than \texttt{eig}.
+In order to do this, the function \texttt{scipy.linalg.eigh} is used. \texttt{eigh} automatically assumes the matrix is symmetric and thus it is quite faster than \texttt{eig}. Note that the initialization checks for consistency in the dimensions and length of lists.
 
 The other problem is, how do we store the variables? How do we convert them to a \texttt{ConicProgrammingProblem}? The methodology used in this project, although it is consistent with famous packages such as \texttt{Sedumi} for \texttt{MATLAB}, is very slow. For now, the package works in the space $\mathbb{R}^{n^2}$ and therefore the symmetry conditions have to be added by hand (that is $\frac{n(n-1)}{2}$ extra conditions). All the conditions are then converted into vectors and stacked into a big matrix for the \texttt{ConicProgrammingProblem} object using \texttt{np.vstack}. There is discussion regarding this in other projects [ref] seen in github, too, and apparently there is no standard answer. 
 
@@ -262,13 +262,24 @@ In this subsection we will put together all the aspects that need to be improved
 The package itself is not too large, thus the documentation is a simple \text{README.md} for github and a \text{README.txt} for pyPI and the installation. In it there are detailed explanations on how to install and run the package.
 
 \section{Breakdown of the work}
-Bernat Guillen: \texttt{SDP}, \texttt{DNNSDP}, \texttt{ConicProgrammingProblem} classes. \texttt{unittest} files. \texttt{points.py} script. All the structure of the package (including \texttt{setup.py}, \texttt{init files}, documentation and this report. Github: $68$ commits, 
+Bernat Guillen: \texttt{SDP}, \texttt{DNNSDP}, \texttt{ConicProgrammingProblem} classes. \texttt{unittest} files. \texttt{points.py} script. All the structure of the package (including \texttt{setup.py}, \texttt{init} files, documentation and this report). Github: $72$ commits, $2640 ++, 1417--$
 
-Michael Tarczon: First \texttt{C++} implementation of the solver but eventually discarded. Files \texttt{alignment.py} and \texttt{alignment.m} to compare results. Very valuable input on some issues of the coding regarding restrictions and SDP programming.
+Michael Tarczon: First \texttt{C++} implementation of the solver but eventually discarded. Files \texttt{alignment.py} and \texttt{alignment.m} to compare results. Input on some issues of the coding regarding restrictions and SDP programming. Github: $12$ commits, $285++$, $113--$
 
-Yuan Liu: Initially, interface between Python and C++, eventually discarded. Print method on \texttt{ConicProgrammingClass}.
+Yuan Liu: Initially, interface between Python and C++, eventually discarded. Print method on \texttt{ConicProgrammingClass}. Github: $3$ commits, $29++$, $1--$
 
 Special thanks to Yuehaw Khoo, who proposed the project back when we were 6 people in the team and was always available to solve doubts.
+
+Although we would like to have a reasonable explanation of why there is a large disparity in the number of commits, we do not. A mix of bad luck (starting with a group of 6 people who then leave), personal problems, poor management skills... Whatever the reason is, I (Bernat Guillen) hope we all have learned from this not only how to code but also how to better plan group projects. In my opinion, this project had a lot of potential because SDP and Conic Programming are used now in a lot of applications and having 6 excellent people working on it would surely have resulted in a very interesting project. 
+
+\section{Conclusions}
+
+We have presented a package that implements the algorithm explained in [ref] in \texttt{Python}. This package solves Conic Programming Problems, which include problems such as Semidefinite Programming and Doubly Non-Negative Semidefinite Programming. It is a fast algorithm with proof of convergence, the first of its kind that has a proof of convergence for problems with four sets of restrictions. Even though the package needs some improvements, it is fully functional and can be applied to many research problems now. 
+
+\texttt{admm4block} can be installed using \texttt{pip} and also includes some example scripts, documentation and tests. It provides (in our opinion) a good balance between the flexibility a researcher needs and the easiness a regular user wants. It includes the classes 
+\texttt{ConicProgrammingProblem} (for general problems), \texttt{SDP} and \texttt{DNNSDP} (for more specific problems). In the future it will include a User Interface and more kinds of problems such as LP or SOCP.
+
+
 
 
 %%% End document
